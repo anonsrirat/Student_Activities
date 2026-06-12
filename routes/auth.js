@@ -1,7 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const querystring = require('querystring');
-const db = require('../db/database');
+const { pool } = require('../db/database');
 const router = express.Router();
 
 const TSU_DOMAIN = process.env.TSU_DOMAIN || 'tsu.ac.th';
@@ -18,11 +18,8 @@ function makeJWT(user) {
   );
 }
 
-// GET /api/auth/google — redirect to Google consent screen
 router.get('/google', (req, res) => {
-  if (!GOOGLE_CLIENT_ID) {
-    return res.redirect('/login?error=no_config');
-  }
+  if (!GOOGLE_CLIENT_ID) return res.redirect('/login?error=no_config');
   const params = querystring.stringify({
     client_id: GOOGLE_CLIENT_ID,
     redirect_uri: CALLBACK_URL,
@@ -35,13 +32,11 @@ router.get('/google', (req, res) => {
   res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`);
 });
 
-// GET /api/auth/google/callback
 router.get('/google/callback', async (req, res) => {
   const { code, error } = req.query;
   if (error || !code) return res.redirect('/login?error=cancelled');
 
   try {
-    // Exchange code for access token
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -56,27 +51,27 @@ router.get('/google/callback', async (req, res) => {
     const tokens = await tokenRes.json();
     if (!tokens.access_token) return res.redirect('/login?error=token');
 
-    // Get user profile
     const profileRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: { Authorization: `Bearer ${tokens.access_token}` }
     });
     const profile = await profileRes.json();
 
     const email = profile.email || '';
-    const domain = email.split('@')[1];
-    if (domain !== TSU_DOMAIN) return res.redirect('/login?error=domain');
+    if (email.split('@')[1] !== TSU_DOMAIN) return res.redirect('/login?error=domain');
 
-    // Upsert user
-    let user = db.prepare('SELECT * FROM users WHERE google_id = ?').get(profile.id);
-    if (user) {
-      db.prepare('UPDATE users SET name = ?, avatar_url = ? WHERE google_id = ?')
-        .run(profile.name, profile.picture, profile.id);
-      user = db.prepare('SELECT * FROM users WHERE google_id = ?').get(profile.id);
+    const [existing] = await pool.query('SELECT * FROM users WHERE google_id = ?', [profile.id]);
+    let user;
+    if (existing.length) {
+      await pool.query('UPDATE users SET name = ?, avatar_url = ? WHERE google_id = ?', [profile.name, profile.picture, profile.id]);
+      const [updated] = await pool.query('SELECT * FROM users WHERE google_id = ?', [profile.id]);
+      user = updated[0];
     } else {
-      db.prepare(
-        'INSERT INTO users (google_id, email, name, avatar_url) VALUES (?, ?, ?, ?)'
-      ).run(profile.id, email, profile.name, profile.picture);
-      user = db.prepare('SELECT * FROM users WHERE id = ?').get(db.lastInsertRowid);
+      const [result] = await pool.query(
+        'INSERT INTO users (google_id, email, name, avatar_url) VALUES (?, ?, ?, ?)',
+        [profile.id, email, profile.name, profile.picture]
+      );
+      const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [result.insertId]);
+      user = rows[0];
     }
 
     const token = makeJWT(user);
@@ -88,18 +83,13 @@ router.get('/google/callback', async (req, res) => {
   }
 });
 
-// GET /api/auth/me
 router.get('/me', (req, res) => {
   const token = req.cookies?.token;
   if (!token) return res.status(401).json({ error: 'ไม่ได้เข้าสู่ระบบ' });
-  try {
-    res.json(jwt.verify(token, JWT_SECRET));
-  } catch {
-    res.status(401).json({ error: 'Session หมดอายุ' });
-  }
+  try { res.json(jwt.verify(token, JWT_SECRET)); }
+  catch { res.status(401).json({ error: 'Session หมดอายุ' }); }
 });
 
-// POST /api/auth/logout
 router.post('/logout', (req, res) => {
   res.clearCookie('token');
   res.json({ success: true });

@@ -17,7 +17,8 @@
 |------|-----------|
 | Runtime | Node.js ≥ 18 |
 | Framework | Express 4.x |
-| Database | SQLite (better-sqlite3) |
+| Database | MySQL 8.0 (mysql2/promise) |
+| Deployment | Docker + Coolify |
 | Auth | Google OAuth 2.0 + JWT |
 | Frontend | HTML5 + CSS3 + Vanilla JS |
 | File Upload | multer |

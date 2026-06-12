@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const path = require('path');
 const jwt = require('jsonwebtoken');
+const { init } = require('./db/database');
 
 const app = express();
 
@@ -85,8 +86,17 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`\n🎓 ระบบจัดการกิจกรรมนิสิต TSU`);
-  console.log(`   Server: http://localhost:${PORT}`);
-  console.log(`   Login:  http://localhost:${PORT}/login\n`);
-});
+
+(async () => {
+  try {
+    await init();
+    app.listen(PORT, () => {
+      console.log(`\n🎓 ระบบจัดการกิจกรรมนิสิต TSU`);
+      console.log(`   Server: http://localhost:${PORT}`);
+      console.log(`   Login:  http://localhost:${PORT}/login\n`);
+    });
+  } catch (err) {
+    console.error('❌ Database initialization failed:', err.message);
+    process.exit(1);
+  }
+})();

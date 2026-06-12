@@ -1,25 +1,28 @@
 const express = require('express');
-const db = require('../db/database');
+const { pool } = require('../db/database');
 const { requireAuth } = require('../middleware/auth');
 const router = express.Router();
 
-// GET /api/notifications/my — my notifications
-router.get('/my', requireAuth, (req, res) => {
-  const rows = db.prepare('SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50').all(req.user.id);
-  const unread = db.prepare('SELECT COUNT(*) as c FROM notifications WHERE user_id = ? AND is_read = 0').get(req.user.id).c;
-  res.json({ notifications: rows, unread });
+router.get('/my', requireAuth, async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50', [req.user.id]);
+    const [unreadRows] = await pool.query('SELECT COUNT(*) as c FROM notifications WHERE user_id = ? AND is_read = 0', [req.user.id]);
+    res.json({ notifications: rows, unread: unreadRows[0].c });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
-// PUT /api/notifications/:id/read — mark one as read
-router.put('/:id/read', requireAuth, (req, res) => {
-  db.prepare('UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
-  res.json({ success: true });
+router.put('/read-all', requireAuth, async (req, res) => {
+  try {
+    await pool.query('UPDATE notifications SET is_read = 1 WHERE user_id = ?', [req.user.id]);
+    res.json({ success: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
-// PUT /api/notifications/read-all — mark all as read
-router.put('/read-all', requireAuth, (req, res) => {
-  db.prepare('UPDATE notifications SET is_read = 1 WHERE user_id = ?').run(req.user.id);
-  res.json({ success: true });
+router.put('/:id/read', requireAuth, async (req, res) => {
+  try {
+    await pool.query('UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    res.json({ success: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
 });
 
 module.exports = router;

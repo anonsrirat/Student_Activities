@@ -1,96 +1,126 @@
-const { Database } = require('node-sqlite3-wasm');
-const path = require('path');
-const fs = require('fs');
+const mysql = require('mysql2/promise');
 
-const dataDir = path.join(__dirname, '..', 'data');
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT) || 3306,
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'student_activities',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  charset: 'utf8mb4',
+  timezone: '+07:00',
+  dateStrings: ['DATE']
+});
 
-const db = new Database(path.join(dataDir, 'activities.db'));
-
-db.exec("PRAGMA journal_mode = WAL");
-db.exec("PRAGMA foreign_keys = ON");
-
-db.exec(`
+const SCHEMA = `
   CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    google_id TEXT UNIQUE,
-    email TEXT UNIQUE NOT NULL,
-    name TEXT NOT NULL,
-    student_id TEXT,
-    role TEXT DEFAULT 'student',
-    avatar_url TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    google_id VARCHAR(255) UNIQUE,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    student_id VARCHAR(50),
+    role VARCHAR(20) DEFAULT 'student',
+    avatar_url VARCHAR(500),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
   CREATE TABLE IF NOT EXISTS activity_categories (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
     description TEXT,
-    min_hours REAL DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+    min_hours DECIMAL(5,1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
   CREATE TABLE IF NOT EXISTS activities (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
     description TEXT,
-    category_id INTEGER REFERENCES activity_categories(id) ON DELETE SET NULL,
-    date TEXT NOT NULL,
-    start_time TEXT,
-    end_time TEXT,
-    location TEXT,
-    capacity INTEGER DEFAULT 0,
-    hours_credit REAL DEFAULT 0,
-    status TEXT DEFAULT 'open',
-    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+    category_id INT,
+    date DATE NOT NULL,
+    start_time TIME,
+    end_time TIME,
+    location VARCHAR(255),
+    capacity INT DEFAULT 0,
+    hours_credit DECIMAL(5,1) DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'open',
+    created_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_id) REFERENCES activity_categories(id) ON DELETE SET NULL,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_date (date),
+    INDEX idx_status (status)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
   CREATE TABLE IF NOT EXISTS activity_registrations (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    activity_id INTEGER NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    status TEXT DEFAULT 'registered',
-    registered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    checked_in_at DATETIME,
-    UNIQUE(activity_id, user_id)
-  );
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    activity_id INT NOT NULL,
+    user_id INT NOT NULL,
+    status VARCHAR(20) DEFAULT 'registered',
+    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    checked_in_at TIMESTAMP NULL,
+    FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY uniq_reg (activity_id, user_id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
   CREATE TABLE IF NOT EXISTS evidence_submissions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    activity_id INTEGER NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
-    file_path TEXT,
-    file_type TEXT,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    activity_id INT NOT NULL,
+    file_path VARCHAR(500),
+    file_type VARCHAR(20),
     description TEXT,
-    status TEXT DEFAULT 'pending',
-    reviewer_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    status VARCHAR(20) DEFAULT 'pending',
+    reviewer_id INT,
     reviewer_note TEXT,
-    reviewed_at DATETIME,
-    submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+    reviewed_at TIMESTAMP NULL,
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE,
+    FOREIGN KEY (reviewer_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_status (status)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
   CREATE TABLE IF NOT EXISTS notifications (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    title TEXT NOT NULL,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
     message TEXT,
-    type TEXT DEFAULT 'info',
-    is_read INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-`);
+    type VARCHAR(50) DEFAULT 'info',
+    is_read TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_read (user_id, is_read)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+`;
 
-// Seed default categories if empty
-const catCount = db.prepare('SELECT COUNT(*) as count FROM activity_categories').get();
-if (catCount.count === 0) {
-  const ins = db.prepare('INSERT INTO activity_categories (name, description, min_hours) VALUES (?, ?, ?)');
-  ins.run('กิจกรรมบำเพ็ญประโยชน์', 'กิจกรรมจิตอาสาและบำเพ็ญประโยชน์ต่อสังคม', 6);
-  ins.run('กิจกรรมพัฒนาทักษะ', 'กิจกรรมพัฒนาทักษะวิชาชีพและวิชาการ', 8);
-  ins.run('กิจกรรมนันทนาการ', 'กิจกรรมกีฬา ดนตรี ศิลปะ และวัฒนธรรม', 4);
-  ins.run('กิจกรรมวิชาการ', 'สัมมนา อบรม การประกวดวิชาการ', 6);
-  ins.run('กิจกรรมนิสิตสัมพันธ์', 'กิจกรรมเสริมสร้างความสัมพันธ์และความเป็นผู้นำ', 4);
+async function init() {
+  const conn = await pool.getConnection();
+  try {
+    const statements = SCHEMA.split(';').map(s => s.trim()).filter(Boolean);
+    for (const stmt of statements) await conn.query(stmt);
+
+    const [cats] = await conn.query('SELECT COUNT(*) as c FROM activity_categories');
+    if (cats[0].c === 0) {
+      const seeds = [
+        ['กิจกรรมบำเพ็ญประโยชน์', 'กิจกรรมจิตอาสาและบำเพ็ญประโยชน์ต่อสังคม', 6],
+        ['กิจกรรมพัฒนาทักษะ', 'กิจกรรมพัฒนาทักษะวิชาชีพและวิชาการ', 8],
+        ['กิจกรรมนันทนาการ', 'กิจกรรมกีฬา ดนตรี ศิลปะ และวัฒนธรรม', 4],
+        ['กิจกรรมวิชาการ', 'สัมมนา อบรม การประกวดวิชาการ', 6],
+        ['กิจกรรมนิสิตสัมพันธ์', 'กิจกรรมเสริมสร้างความสัมพันธ์และความเป็นผู้นำ', 4],
+      ];
+      for (const s of seeds) {
+        await conn.query('INSERT INTO activity_categories (name, description, min_hours) VALUES (?, ?, ?)', s);
+      }
+    }
+    console.log('✓ Database initialized');
+  } finally {
+    conn.release();
+  }
 }
 
-module.exports = db;
+module.exports = { pool, init };
