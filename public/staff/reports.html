@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>รายงาน — ระบบกิจกรรมนิสิต TSU</title>
-  <link rel="stylesheet" href="/shared/style.css?v=20260612-5">
+  <link rel="stylesheet" href="/shared/style.css?v=20260613-1">
 </head>
 <body>
   <div class="layout">
@@ -31,17 +31,22 @@
             <div class="empty-state" style="padding:48px"><p>กำลังโหลด...</p></div>
           </div>
         </div>
+        <div class="pagination" id="pagination"></div>
       </main>
     </div>
   </div>
 
-  <script src="/shared/icons.js?v=20260612-5"></script>
-  <script src="/shared/datepicker.js?v=20260612-5"></script>
-  <script src="/shared/app.js?v=20260612-5"></script>
+  <script src="/shared/icons.js?v=20260613-1"></script>
+  <script src="/shared/datepicker.js?v=20260613-1"></script>
+  <script src="/shared/app.js?v=20260613-1"></script>
   <script>
+    let allSummary = [];
+    let currentPage = 1;
+    const PER_PAGE = 20;
+
     async function loadCategories() {
       try {
-        const cats = await api.get('/api/criteria');
+        const cats = await api.getCached('/api/criteria', 120000);
         const sel = document.getElementById('export-category');
         cats.forEach(c => {
           const opt = document.createElement('option');
@@ -60,32 +65,42 @@
 
     async function loadSummary() {
       try {
-        const data = await api.get('/api/reports/summary');
-        const wrap = document.getElementById('summary-wrap');
-        if (!data.length) {
-          wrap.innerHTML = '<div class="empty-state" style="padding:32px"><h3>ยังไม่มีนิสิตในระบบ</h3></div>';
-          return;
-        }
-        wrap.innerHTML = `<div class="table-wrap"><table>
-          <thead><tr><th>รหัสนิสิต</th><th>ชื่อ-นามสกุล</th><th>อีเมล</th><th>กิจกรรมที่เข้าร่วม</th><th>ชั่วโมงสะสม</th><th>รอยืนยัน</th></tr></thead>
-          <tbody>${data.map(s => `
-            <tr>
-              <td>${s.student_id || '-'}</td>
-              <td class="font-semibold">${s.name}</td>
-              <td class="text-sm">${s.email}</td>
-              <td style="text-align:center">${s.total_activities}</td>
-              <td style="text-align:center"><span class="font-semibold">${formatHourNumber(s.total_hours)}</span> ชม.</td>
-              <td style="text-align:center">${s.pending_activities > 0 ? `<span class="badge badge-pending">${s.pending_activities}</span>` : '-'}</td>
-            </tr>`).join('')}
-          </tbody></table></div>`;
+        allSummary = await api.get('/api/reports/summary');
+        renderSummary(1);
       } catch { toast('เกิดข้อผิดพลาดในการโหลด', 'error'); }
+    }
+
+    function renderSummary(page = 1) {
+      currentPage = page;
+      const wrap = document.getElementById('summary-wrap');
+      if (!allSummary.length) {
+        wrap.innerHTML = '<div class="empty-state" style="padding:32px"><h3>ยังไม่มีนิสิตในระบบ</h3></div>';
+        document.getElementById('pagination').innerHTML = '';
+        return;
+      }
+      const { items, page: safePage, pages } = paginateClient(allSummary, page, PER_PAGE);
+      currentPage = safePage;
+
+      wrap.innerHTML = `<div class="table-wrap"><table>
+        <thead><tr><th>รหัสนิสิต</th><th>ชื่อ-นามสกุล</th><th>อีเมล</th><th>กิจกรรมที่เข้าร่วม</th><th>ชั่วโมงสะสม</th><th>รอยืนยัน</th></tr></thead>
+        <tbody>${items.map(s => `
+          <tr>
+            <td>${s.student_id || '-'}</td>
+            <td class="font-semibold">${s.name}</td>
+            <td class="text-sm">${s.email}</td>
+            <td style="text-align:center">${s.total_activities}</td>
+            <td style="text-align:center"><span class="font-semibold">${formatHourNumber(s.total_hours)}</span> ชม.</td>
+            <td style="text-align:center">${s.pending_activities > 0 ? `<span class="badge badge-pending">${s.pending_activities}</span>` : '-'}</td>
+          </tr>`).join('')}
+        </tbody></table></div>`;
+      renderPagination(document.getElementById('pagination'), safePage, pages, renderSummary);
     }
 
     (async () => {
       document.getElementById('export-btn').innerHTML = `${icon('download', { size: 16 })} Export CSV`;
       await initLayout({ activePage: '/staff/reports', requireRole: 'staff' });
-      loadCategories();
-      loadSummary();
+      // Load categories and summary in parallel
+      await Promise.all([loadCategories(), loadSummary()]);
     })();
   </script>
 </body>

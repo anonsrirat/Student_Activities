@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>กิจกรรมของฉัน — ระบบกิจกรรมนิสิต TSU</title>
-  <link rel="stylesheet" href="/shared/style.css?v=20260612-5">
+  <link rel="stylesheet" href="/shared/style.css?v=20260613-1">
 </head>
 <body>
   <div class="layout">
@@ -36,28 +36,36 @@
             <div class="empty-state" style="padding:48px"><p>กำลังโหลด...</p></div>
           </div>
         </div>
+        <div class="pagination" id="pagination"></div>
       </main>
     </div>
   </div>
 
-  <script src="/shared/icons.js?v=20260612-5"></script>
-  <script src="/shared/datepicker.js?v=20260612-5"></script>
-  <script src="/shared/app.js?v=20260612-5"></script>
+  <script src="/shared/icons.js?v=20260613-1"></script>
+  <script src="/shared/datepicker.js?v=20260613-1"></script>
+  <script src="/shared/app.js?v=20260613-1"></script>
   <script>
     let allRegs = [];
+    let currentPage = 1;
+    const PER_PAGE = 15;
 
-    function render(filterStatus = '') {
-      const data = filterStatus ? allRegs.filter(r => r.status === filterStatus) : allRegs;
+    function render(filterStatus = '', page = 1) {
+      currentPage = page;
+      const filtered = filterStatus ? allRegs.filter(r => r.status === filterStatus) : allRegs;
+      const { items, page: safePage, pages } = paginateClient(filtered, page, PER_PAGE);
+      currentPage = safePage;
+
       const wrap = document.getElementById('table-wrap');
-      if (!data.length) {
+      if (!filtered.length) {
         wrap.innerHTML = '<div class="empty-state" style="padding:48px"><h3>ไม่มีกิจกรรม</h3><p>ยังไม่ได้ลงทะเบียนกิจกรรมใดๆ</p><a href="/activities" class="btn btn-primary mt-3">ดูกิจกรรม</a></div>';
+        document.getElementById('pagination').innerHTML = '';
         return;
       }
       wrap.innerHTML = `<div class="table-wrap">
         <table>
           <thead><tr><th>กิจกรรม</th><th>วันที่</th><th>หมวดหมู่</th><th>ชั่วโมง</th><th>สถานะการเข้าร่วม</th><th>การดำเนินการ</th></tr></thead>
           <tbody>
-            ${data.map(r => {
+            ${items.map(r => {
               const regState = registrationState(r);
               return `
               <tr>
@@ -77,6 +85,7 @@
           </tbody>
         </table>
       </div>`;
+      renderPagination(document.getElementById('pagination'), safePage, pages, (p) => render(filterStatus, p));
     }
 
     async function cancelReg(activityId) {
@@ -85,7 +94,7 @@
         await api.del(`/api/activities/${activityId}/register`);
         toast('ยกเลิกแล้ว', 'success');
         allRegs = allRegs.filter(r => r.activity_id !== activityId);
-        render(document.getElementById('filter-status').value);
+        render(document.getElementById('filter-status').value, currentPage);
       } catch (e) { toast(e.error || 'เกิดข้อผิดพลาด', 'error'); }
     }
 
@@ -96,7 +105,7 @@
         const data = await api.get('/api/stats/dashboard');
         allRegs = data.myRegistrations || [];
         render();
-        document.getElementById('filter-status').addEventListener('change', e => render(e.target.value));
+        document.getElementById('filter-status').addEventListener('change', e => render(e.target.value, 1));
       } catch { toast('เกิดข้อผิดพลาดในการโหลด', 'error'); }
     })();
   </script>

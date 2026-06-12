@@ -5,6 +5,19 @@ const api = {
     if (!r.ok) throw await r.json().catch(() => ({ error: r.statusText }));
     return r.json();
   },
+  async getCached(url, ttlMs = 120000) {
+    const key = '__api_cache_' + url;
+    try {
+      const raw = sessionStorage.getItem(key);
+      if (raw) {
+        const { data, ts } = JSON.parse(raw);
+        if (Date.now() - ts < ttlMs) return data;
+      }
+    } catch {}
+    const data = await this.get(url);
+    try { sessionStorage.setItem(key, JSON.stringify({ data, ts: Date.now() })); } catch {}
+    return data;
+  },
   async post(url, body, isForm = false) {
     const opts = { method: 'POST', credentials: 'include' };
     if (isForm) { opts.body = body; }
@@ -294,6 +307,9 @@ function renderSidebar(user) {
   document.querySelectorAll('#notif-btn').forEach(btn => {
     if (!btn.querySelector('svg')) btn.innerHTML = icon('bell', { size: 18 });
   });
+
+  // Eagerly prefetch all nav pages for faster transitions
+  nav.forEach(item => prefetchUrl(item.href));
 }
 
 async function loadNotifCount() {
@@ -519,15 +535,103 @@ function debounce(fn, ms = 350) {
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
 }
 
-// ===== Prefetch nav links on hover =====
-document.addEventListener('mouseover', e => {
-  const a = e.target.closest('a[href^="/"]:not([href*="#"]):not([data-no-prefetch])');
-  if (!a || a._prefetched) return;
-  const href = a.getAttribute('href');
-  if (href.includes('/api/') || href.includes('/uploads/')) return;
-  a._prefetched = true;
+// ===== Custom Category Select =====
+function initCategorySelect(container, categories, opts = {}) {
+  const { placeholder = '-- เลือกหมวดหมู่ --', allowEmpty = false, emptyLabel = '-- ไม่ระบุ --', onChange } = opts;
+  let value = opts.value || '';
+  let isOpen = false;
+
+  function getSelected() { return categories.find(c => String(c.id) === String(value)); }
+
+  function render() {
+    const sel = getSelected();
+    const valueHtml = sel
+      ? categoryBadge(sel)
+      : `<span class="cat-select-placeholder">${escapeHtml(placeholder)}</span>`;
+    container.innerHTML = `
+      <div class="cat-select-trigger form-control" tabindex="0">
+        <span class="cat-select-value">${valueHtml}</span>
+        <svg class="cat-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>`;
+    container.classList.toggle('open', isOpen);
+    if (isOpen) renderDropdown();
+  }
+
+  function renderDropdown() {
+    let dd = container.querySelector('.cat-select-dropdown');
+    if (dd) dd.remove();
+    dd = document.createElement('div');
+    dd.className = 'cat-select-dropdown';
+    let html = '';
+    if (allowEmpty) {
+      html += `<button type="button" class="cat-select-option${!value ? ' selected' : ''}" data-value="">
+        <span style="color:var(--text-muted);font-size:.875rem">${escapeHtml(emptyLabel)}</span></button>`;
+    }
+    categories.forEach(c => {
+      html += `<button type="button" class="cat-select-option${String(c.id) === String(value) ? ' selected' : ''}" data-value="${c.id}">
+        ${categoryBadge(c)}</button>`;
+    });
+    dd.innerHTML = html;
+    container.appendChild(dd);
+    dd.querySelectorAll('.cat-select-option').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        value = btn.dataset.value;
+        isOpen = false;
+        render();
+        onChange?.(value);
+      });
+    });
+  }
+
+  function toggle(e) {
+    if (e) e.stopPropagation();
+    isOpen = !isOpen;
+    render();
+    if (isOpen) {
+      const closeHandler = (ev) => {
+        if (!container.contains(ev.target)) {
+          isOpen = false;
+          render();
+          document.removeEventListener('pointerdown', closeHandler);
+        }
+      };
+      setTimeout(() => document.addEventListener('pointerdown', closeHandler), 0);
+    }
+  }
+
+  container.addEventListener('click', toggle);
+  container.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+  container.className = 'cat-select';
+  render();
+
+  return {
+    getValue: () => value,
+    setValue: (v) => { value = v; render(); },
+    setInvalid: (v) => { const t = container.querySelector('.cat-select-trigger'); if (t) t.classList.toggle('invalid', v); }
+  };
+}
+
+// ===== Client-side Pagination =====
+function paginateClient(allData, page, perPage) {
+  const total = allData.length;
+  const pages = Math.ceil(total / perPage) || 1;
+  const safePage = Math.max(1, Math.min(page, pages));
+  const start = (safePage - 1) * perPage;
+  return { items: allData.slice(start, start + perPage), page: safePage, pages, total };
+}
+
+// ===== Prefetch nav links (eager) =====
+const _prefetchedUrls = new Set();
+function prefetchUrl(href) {
+  if (_prefetchedUrls.has(href) || href.includes('/api/') || href.includes('/uploads/')) return;
+  _prefetchedUrls.add(href);
   const link = document.createElement('link');
   link.rel = 'prefetch';
   link.href = href;
   document.head.appendChild(link);
+}
+document.addEventListener('mouseover', e => {
+  const a = e.target.closest('a[href^="/"]:not([href*="#"]):not([data-no-prefetch])');
+  if (a) prefetchUrl(a.getAttribute('href'));
 }, { passive: true });

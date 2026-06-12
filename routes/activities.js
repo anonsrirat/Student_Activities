@@ -185,6 +185,10 @@ router.post('/', requireAuth, requireRole('staff'), async (req, res) => {
       registration_start_at, registration_end_at, location, capacity, hours_credit, status
     } = req.body;
     if (!title || !date) return res.status(400).json({ error: 'กรุณากรอกชื่อและวันที่กิจกรรม' });
+    if (!category_id) return res.status(400).json({ error: 'กรุณาเลือกหมวดหมู่กิจกรรม' });
+    if (!start_time || !end_time) return res.status(400).json({ error: 'กรุณาระบุเวลาเริ่มและเวลาสิ้นสุด' });
+    if (!location) return res.status(400).json({ error: 'กรุณาระบุสถานที่จัดกิจกรรม' });
+    if (!hours_credit || parseFloat(hours_credit) <= 0) return res.status(400).json({ error: 'กรุณาระบุชั่วโมงกิจกรรมที่มากกว่า 0' });
     if (end_date && end_date < date) return res.status(400).json({ error: 'วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่มกิจกรรม' });
     if (registration_start_at && registration_end_at && registration_end_at < registration_start_at) {
       return res.status(400).json({ error: 'เวลาปิดรับสมัครต้องไม่ก่อนเวลาเปิดรับสมัคร' });
@@ -211,6 +215,10 @@ router.put('/:id', requireAuth, requireRole('staff'), async (req, res) => {
     const [existing] = await pool.query('SELECT id FROM activities WHERE id = ?', [req.params.id]);
     if (!existing.length) return res.status(404).json({ error: 'ไม่พบกิจกรรม' });
     if (!title || !date) return res.status(400).json({ error: 'กรุณากรอกชื่อและวันที่กิจกรรม' });
+    if (!category_id) return res.status(400).json({ error: 'กรุณาเลือกหมวดหมู่กิจกรรม' });
+    if (!start_time || !end_time) return res.status(400).json({ error: 'กรุณาระบุเวลาเริ่มและเวลาสิ้นสุด' });
+    if (!location) return res.status(400).json({ error: 'กรุณาระบุสถานที่จัดกิจกรรม' });
+    if (!hours_credit || parseFloat(hours_credit) <= 0) return res.status(400).json({ error: 'กรุณาระบุชั่วโมงกิจกรรมที่มากกว่า 0' });
     if (end_date && end_date < date) return res.status(400).json({ error: 'วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่มกิจกรรม' });
     if (registration_start_at && registration_end_at && registration_end_at < registration_start_at) {
       return res.status(400).json({ error: 'เวลาปิดรับสมัครต้องไม่ก่อนเวลาเปิดรับสมัคร' });

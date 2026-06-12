@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>กิจกรรมทั้งหมด — ระบบกิจกรรมนิสิต TSU</title>
-  <link rel="stylesheet" href="/shared/style.css?v=20260612-5">
+  <link rel="stylesheet" href="/shared/style.css?v=20260613-1">
 </head>
 <body>
   <div class="layout">
@@ -46,16 +46,16 @@
     </div>
   </div>
 
-  <script src="/shared/icons.js?v=20260612-5"></script>
-  <script src="/shared/datepicker.js?v=20260612-5"></script>
-  <script src="/shared/app.js?v=20260612-5"></script>
+  <script src="/shared/icons.js?v=20260613-1"></script>
+  <script src="/shared/datepicker.js?v=20260613-1"></script>
+  <script src="/shared/app.js?v=20260613-1"></script>
   <script>
     let currentPage = 1;
     let categories = [];
 
     async function loadCategories() {
       try {
-        categories = await api.get('/api/criteria');
+        categories = await api.getCached('/api/criteria', 120000);
         const sel = document.getElementById('filter-category');
         categories.forEach(c => {
           const opt = document.createElement('option');

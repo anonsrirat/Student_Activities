@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>จัดการกิจกรรม — ระบบกิจกรรมนิสิต TSU</title>
-  <link rel="stylesheet" href="/shared/style.css?v=20260612-5">
+  <link rel="stylesheet" href="/shared/style.css?v=20260613-1">
 </head>
 <body>
   <div class="layout">
@@ -72,9 +72,8 @@
           </div>
           <div class="form-row cols-2">
             <div class="form-group">
-              <label class="form-label">หมวดหมู่</label>
-              <select class="form-control" id="f-category"></select>
-              <div id="f-category-preview" class="category-select-preview text-sm text-muted mt-2">ยังไม่เลือกหมวดหมู่</div>
+              <label class="form-label">หมวดหมู่ <span class="required">*</span></label>
+              <div id="f-category-wrap"></div>
             </div>
             <div class="form-group">
               <label class="form-label">สถานะ</label>
@@ -104,12 +103,12 @@
           </div>
           <div class="form-row cols-2">
             <div class="form-group">
-              <label class="form-label">เวลาเริ่ม</label>
-              <input type="time" class="form-control" id="f-start">
+              <label class="form-label">เวลาเริ่ม <span class="required">*</span></label>
+              <input type="time" class="form-control" id="f-start" required>
             </div>
             <div class="form-group">
-              <label class="form-label">เวลาสิ้นสุด</label>
-              <input type="time" class="form-control" id="f-end">
+              <label class="form-label">เวลาสิ้นสุด <span class="required">*</span></label>
+              <input type="time" class="form-control" id="f-end" required>
             </div>
           </div>
           <div class="form-section">
@@ -117,7 +116,7 @@
               <input type="checkbox" id="f-use-reg-window" onchange="syncRegWindow()">
               <span>
                 <strong>กำหนดเวลาเปิด-ปิดรับสมัคร</strong>
-                <small>ถ้าไม่เปิด ระบบจะใช้สถานะ “เปิดรับสมัคร/ปิดรับสมัคร” ตามปกติ</small>
+                <small>ถ้าไม่เปิด ระบบจะใช้สถานะ "เปิดรับสมัคร/ปิดรับสมัคร" ตามปกติ</small>
               </span>
             </label>
             <div id="reg-window-fields" class="hidden">
@@ -144,9 +143,9 @@
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label">สถานที่</label>
+            <label class="form-label">สถานที่ <span class="required">*</span></label>
             <div class="location-row">
-              <input type="text" class="form-control" id="f-location" list="location-options" placeholder="ห้อง / อาคาร / สถานที่">
+              <input type="text" class="form-control" id="f-location" list="location-options" placeholder="ห้อง / อาคาร / สถานที่" required>
               <button type="button" class="btn btn-outline" onclick="saveLocationPreset()" id="save-location-btn">บันทึกห้องนี้</button>
             </div>
             <datalist id="location-options"></datalist>
@@ -158,8 +157,8 @@
               <input type="number" class="form-control" id="f-capacity" min="0" value="0">
             </div>
             <div class="form-group">
-              <label class="form-label">ชั่วโมงที่ได้รับ</label>
-              <input type="number" class="form-control" id="f-hours" min="0" step="1" value="0">
+              <label class="form-label">ชั่วโมงที่ได้รับ <span class="required">*</span></label>
+              <input type="number" class="form-control" id="f-hours" min="0" step="1" value="0" required>
             </div>
           </div>
           <div class="form-group">
@@ -175,34 +174,28 @@
     </div>
   </div>
 
-  <script src="/shared/icons.js?v=20260612-5"></script>
-  <script src="/shared/datepicker.js?v=20260612-5"></script>
-  <script src="/shared/app.js?v=20260612-5"></script>
+  <script src="/shared/icons.js?v=20260613-1"></script>
+  <script src="/shared/datepicker.js?v=20260613-1"></script>
+  <script src="/shared/app.js?v=20260613-1"></script>
   <script>
     let categories = [];
     let savedLocations = [];
     let currentPage = 1;
+    let catSelect = null;
 
     async function loadCategories() {
-      categories = await api.get('/api/criteria');
-      const sel = document.getElementById('f-category');
+      categories = await api.getCached('/api/criteria', 120000);
       const filterSel = document.getElementById('filter-category');
-      const none = '<option value="">-- ไม่ระบุ --</option>';
-      sel.innerHTML = none + categories.map(c => `<option value="${c.id}">● ${c.name}</option>`).join('');
       filterSel.innerHTML = '<option value="">ทุกหมวดหมู่</option>' + categories.map(c => `<option value="${c.id}">● ${c.name}</option>`).join('');
-      sel.onchange = updateCategoryPreview;
-      updateCategoryPreview();
-    }
-
-    function updateCategoryPreview() {
-      const id = document.getElementById('f-category').value;
-      const cat = categories.find(c => String(c.id) === String(id));
-      document.getElementById('f-category-preview').innerHTML = cat ? categoryBadge(cat) : 'ยังไม่เลือกหมวดหมู่';
+      catSelect = initCategorySelect(document.getElementById('f-category-wrap'), categories, {
+        placeholder: '-- เลือกหมวดหมู่ --',
+        allowEmpty: false,
+      });
     }
 
     async function loadLocations() {
       try {
-        savedLocations = await api.get('/api/activities/locations');
+        savedLocations = await api.getCached('/api/activities/locations', 120000);
       } catch {
         savedLocations = [];
       }
@@ -236,6 +229,7 @@
       try {
         await api.post('/api/activities/locations', { name });
         toast('บันทึกห้องไว้ใช้ครั้งต่อไปแล้ว', 'success');
+        try { sessionStorage.removeItem('__api_cache_/api/activities/locations'); } catch {}
         await loadLocations();
       } catch (e) { toast(e.error || 'บันทึกห้องไม่สำเร็จ', 'error'); }
     }
@@ -244,6 +238,7 @@
       if (!await confirmDialog('ต้องการลบห้องหรือสถานที่นี้ออกจากรายการล่วงหน้าหรือไม่?', { title: 'ลบห้องที่บันทึกไว้', confirmText: 'ลบ', tone: 'danger' })) return;
       try {
         await api.del(`/api/activities/locations/${id}`);
+        try { sessionStorage.removeItem('__api_cache_/api/activities/locations'); } catch {}
         await loadLocations();
       } catch (e) { toast(e.error || 'ลบห้องไม่สำเร็จ', 'error'); }
     }
@@ -314,7 +309,7 @@
       document.getElementById('edit-id').value = '';
       document.getElementById('activity-form').reset();
       document.getElementById('f-duration-mode').value = 'single';
-      updateCategoryPreview();
+      catSelect?.setValue('');
       document.getElementById('f-date')._setDate?.('');
       document.getElementById('f-end-date')._setDate?.('');
       document.getElementById('f-start')._setTime?.('');
@@ -324,6 +319,7 @@
       setDateTimeControls('f-reg-end', '', '');
       syncDurationMode();
       syncRegWindow();
+      clearValidationErrors();
       openModal('activity-modal');
     }
 
@@ -331,8 +327,7 @@
       document.getElementById('modal-title').textContent = 'แก้ไขกิจกรรม';
       document.getElementById('edit-id').value = a.id;
       document.getElementById('f-title').value = a.title || '';
-      document.getElementById('f-category').value = a.category_id || '';
-      updateCategoryPreview();
+      catSelect?.setValue(a.category_id || '');
       document.getElementById('f-status').value = a.status || 'open';
       const dateVal = a.date ? a.date.slice(0, 10) : '';
       const endDateVal = a.end_date ? a.end_date.slice(0, 10) : '';
@@ -352,6 +347,7 @@
       document.getElementById('f-desc').value = a.description || '';
       syncDurationMode();
       syncRegWindow();
+      clearValidationErrors();
       openModal('activity-modal');
     }
 
@@ -375,18 +371,55 @@
       document.getElementById(`${prefix}-time`)._setTime?.(time || '');
     }
 
+    function clearValidationErrors() {
+      document.querySelectorAll('.form-control.invalid').forEach(el => el.classList.remove('invalid'));
+      catSelect?.setInvalid(false);
+    }
+
+    function validateField(id, condition) {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('invalid', !condition);
+      return condition;
+    }
+
     async function saveActivity() {
       const btn = document.getElementById('save-btn');
       btn.disabled = true;
+      clearValidationErrors();
+
       const id = document.getElementById('edit-id').value;
+      const title = document.getElementById('f-title').value.trim();
+      const categoryId = catSelect?.getValue() || '';
+      const date = document.getElementById('f-date').value;
+      const startTime = document.getElementById('f-start').value;
+      const endTime = document.getElementById('f-end').value;
+      const location = document.getElementById('f-location').value.trim();
+      const hoursVal = Number(document.getElementById('f-hours').value || 0);
       const isMulti = document.getElementById('f-duration-mode').value === 'multi';
       const useRegWindow = document.getElementById('f-use-reg-window').checked;
-      const date = document.getElementById('f-date').value;
       const endDate = isMulti ? document.getElementById('f-end-date').value : '';
+
+      // Validate required fields
+      let valid = true;
+      if (!validateField('f-title', !!title)) valid = false;
+      if (!categoryId) { catSelect?.setInvalid(true); valid = false; }
+      if (!validateField('f-date', !!date)) valid = false;
+      if (!validateField('f-start', !!startTime)) valid = false;
+      if (!validateField('f-end', !!endTime)) valid = false;
+      if (!validateField('f-location', !!location)) valid = false;
+      if (!validateField('f-hours', hoursVal > 0)) valid = false;
+
+      if (!valid) {
+        toast('กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน', 'error');
+        btn.disabled = false;
+        return;
+      }
+
       const regStartDate = document.getElementById('f-reg-start-date').value;
       const regStartTime = document.getElementById('f-reg-start-time').value;
       const regEndDate = document.getElementById('f-reg-end-date').value;
       const regEndTime = document.getElementById('f-reg-end-time').value;
+
       if (isMulti && !endDate) {
         toast('กรุณาเลือกวันที่สิ้นสุดของกิจกรรมหลายวัน', 'error');
         btn.disabled = false;
@@ -398,18 +431,18 @@
         return;
       }
       const body = {
-        title: document.getElementById('f-title').value,
-        category_id: document.getElementById('f-category').value || null,
+        title,
+        category_id: categoryId || null,
         status: document.getElementById('f-status').value,
         date,
         end_date: endDate || null,
-        start_time: document.getElementById('f-start').value,
-        end_time: document.getElementById('f-end').value,
+        start_time: startTime,
+        end_time: endTime,
         registration_start_at: useRegWindow ? buildDateTime(regStartDate, regStartTime) : null,
         registration_end_at: useRegWindow ? buildDateTime(regEndDate, regEndTime || '23:59') : null,
-        location: document.getElementById('f-location').value,
+        location,
         capacity: document.getElementById('f-capacity').value,
-        hours_credit: Math.round(Number(document.getElementById('f-hours').value || 0)),
+        hours_credit: Math.round(hoursVal),
         description: document.getElementById('f-desc').value,
       };
       if (!await confirmDialog(id ? 'ต้องการบันทึกการแก้ไขกิจกรรมนี้หรือไม่?' : 'ต้องการสร้างกิจกรรมนี้หรือไม่?', {
@@ -454,9 +487,8 @@
       syncRegWindow();
       document.getElementById('add-btn').innerHTML = `${icon('plus', { size: 16 })} เพิ่มกิจกรรม`;
       await initLayout({ activePage: '/staff/activities', requireRole: 'staff' });
-      await loadCategories();
-      await loadLocations();
-      await loadTimeDebug();
+      // Load categories, locations, and time debug in parallel
+      await Promise.all([loadCategories(), loadLocations(), loadTimeDebug()]);
       setInterval(updateBrowserTime, 1000);
       loadActivities();
       const doSearch = debounce(() => loadActivities(1));

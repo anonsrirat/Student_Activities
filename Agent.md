@@ -1,306 +1,561 @@
 # Agent.md — ระบบจัดการกิจกรรมนิสิต TSU
 
+อัปเดตล่าสุด: 13 มิถุนายน 2026
+
+เอกสารนี้เป็นคู่มือสำหรับ AI agent หรือนักพัฒนาที่ต้องเข้ามาทำงานต่อในโปรเจกต์นี้ ให้เริ่มจากไฟล์นี้ก่อนเสมอ เพราะสรุปภาพรวมระบบ โครงสร้างโค้ด จุดสำคัญ และแนวทางตรวจงานล่าสุดไว้แล้ว
+
+---
+
 ## ภาพรวมระบบ
 
-**ชื่อระบบ:** ระบบจัดการกิจกรรมนิสิต มหาวิทยาลัยทักษิณ  
-**วัตถุประสงค์:** จัดการ ติดตาม และประเมินกิจกรรมของนิสิตมหาวิทยาลัย  
+**ชื่อระบบ:** ระบบจัดการกิจกรรมนิสิต มหาวิทยาลัยทักษิณ
+
+**วัตถุประสงค์:** จัดการกิจกรรม การลงทะเบียน การตรวจหลักฐาน ชั่วโมงกิจกรรม เกณฑ์กิจกรรม รายงาน และการแจ้งเตือนของนิสิต
+
 **กลุ่มผู้พัฒนา:**
+
 - นายอานนท์ ศรีรัฐ รหัสนิสิต 6720210057
 - นายวรพล บัวแก้ว รหัสนิสิต 6720210050
 - นายศุภกร ยางสมบูรณ์ รหัสนิสิต 6720210102
+
+ระบบแบ่งผู้ใช้หลักเป็น 2 กลุ่ม:
+
+- `student`: นิสิต ใช้ดูแดชบอร์ด ดูกิจกรรม ลงทะเบียน ยกเลิกลงทะเบียน ยื่นหลักฐาน และติดตามเกณฑ์กิจกรรม
+- `staff`: เจ้าหน้าที่ ใช้จัดการกิจกรรม เกณฑ์ ผู้ใช้ หลักฐาน รายงาน ห้อง/สถานที่ และตรวจสอบเวลาระบบ
 
 ---
 
 ## Tech Stack
 
 | ส่วน | เทคโนโลยี |
-|------|-----------|
-| Runtime | Node.js ≥ 18 |
+|---|---|
+| Runtime | Node.js >= 18 |
 | Framework | Express 4.x |
-| Database | MySQL 8.0 (mysql2/promise) |
+| Database | MySQL 8.0 ผ่าน `mysql2/promise` |
+| Auth | Google OAuth 2.0 + JWT ใน `httpOnly` cookie |
+| Frontend | HTML5 + CSS3 + Vanilla JavaScript |
+| Upload | `multer` |
+| Performance | `compression`, static cache แบบ revalidate, query version ใน asset |
 | Deployment | Docker + Coolify |
-| Auth | Google OAuth 2.0 + JWT |
-| Frontend | HTML5 + CSS3 + Vanilla JS |
-| File Upload | multer |
 
 ---
 
 ## โครงสร้างโปรเจกต์
 
-```
+```text
 ระบบจัดการกิจกรรมนิสิต/
-├── Agent.md              ← เอกสารนี้
-├── server.js             ← Express entry point
+├── Agent.md
+├── README.md
+├── DEPLOY.md
+├── Dockerfile
+├── docker-compose.yml
 ├── package.json
-├── .env.example          ← Template สำหรับ environment variables
-├── .gitignore
+├── package-lock.json
+├── server.js
 ├── db/
-│   └── database.js       ← SQLite init + schema + seed data
+│   └── database.js
 ├── middleware/
-│   ├── auth.js           ← JWT cookie verification
-│   └── role.js           ← Role-based access control
+│   ├── auth.js
+│   └── role.js
 ├── routes/
-│   ├── auth.js           ← Google OAuth flow + /me + /logout
-│   ├── activities.js     ← CRUD กิจกรรม + ลงทะเบียน
-│   ├── evidence.js       ← ยื่น/ตรวจหลักฐาน
-│   ├── criteria.js       ← CRUD หมวดหมู่/เกณฑ์
-│   ├── notifications.js  ← การแจ้งเตือน
-│   ├── reports.js        ← CSV export + summary
-│   ├── stats.js          ← Dashboard statistics
-│   └── users.js          ← จัดการผู้ใช้
+│   ├── activities.js
+│   ├── auth.js
+│   ├── criteria.js
+│   ├── evidence.js
+│   ├── notifications.js
+│   ├── reports.js
+│   ├── stats.js
+│   └── users.js
 ├── public/
-│   ├── login.html
-│   ├── dashboard.html
 │   ├── activities.html
 │   ├── activity-detail.html
-│   ├── my-activities.html
-│   ├── submit-evidence.html
+│   ├── calendar.html
 │   ├── criteria.html
+│   ├── dashboard.html
+│   ├── login.html
+│   ├── my-activities.html
 │   ├── notifications.html
-│   ├── staff/
-│   │   ├── dashboard.html
-│   │   ├── activities.html
-│   │   ├── evidence.html
-│   │   ├── reports.html
-│   │   ├── criteria.html
-│   │   └── users.html
-│   └── shared/
-│       ├── style.css     ← Design system ทั้งหมด
-│       └── app.js        ← Shared utilities (api, toast, layout, ฯลฯ)
-├── uploads/              ← ไฟล์หลักฐานที่อัปโหลด
-└── data/                 ← SQLite database (สร้างอัตโนมัติ)
+│   ├── submit-evidence.html
+│   ├── shared/
+│   │   ├── app.js
+│   │   ├── calendar.js
+│   │   ├── datepicker.js
+│   │   ├── icons.js
+│   │   └── style.css
+│   └── staff/
+│       ├── activities.html
+│       ├── criteria.html
+│       ├── dashboard.html
+│       ├── evidence.html
+│       ├── reports.html
+│       └── users.html
+└── uploads/
+    └── .gitkeep
 ```
+
+หมายเหตุสำคัญ: โปรเจกต์ปัจจุบันใช้ MySQL แล้ว ไม่ใช่ SQLite เอกสารเก่าบางจุดเคยอ้างถึง SQLite และถูกปรับในไฟล์นี้แล้ว
 
 ---
 
-## การติดตั้งและรันระบบ
+## วิธีรันระบบ
 
-### 1. ติดตั้ง Dependencies
+### ติดตั้ง dependency
+
 ```bash
 npm install
 ```
 
-### 2. ตั้งค่า Environment Variables
-```bash
-# คัดลอก .env.example เป็น .env
-copy .env.example .env
-# แก้ไขค่าใน .env
+### ตั้งค่า environment
+
+คัดลอก `.env.example` เป็น `.env` แล้วตั้งค่าต่อไปนี้:
+
+```env
+GOOGLE_CLIENT_ID=your_google_client_id_here
+GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+GOOGLE_CALLBACK_URL=http://localhost:3000/api/auth/google/callback
+
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=your_mysql_user
+DB_PASSWORD=your_mysql_password
+DB_NAME=student_activities
+
+SESSION_SECRET=change_this_to_random_secret_min_32_chars
+JWT_SECRET=change_this_to_random_jwt_secret_min_32_chars
+
+TSU_DOMAIN=tsu.ac.th
+PORT=3000
+NODE_ENV=production
 ```
 
-### 3. ตั้งค่า Google OAuth
-1. ไปที่ [Google Cloud Console](https://console.cloud.google.com/)
-2. สร้าง Project ใหม่
-3. เปิดใช้งาน **Google+ API** และ **Google OAuth 2.0**
-4. ไปที่ **APIs & Services → Credentials → Create OAuth Client ID**
-5. Application type: **Web application**
-6. Authorized redirect URIs: `http://localhost:3000/api/auth/google/callback`
-7. คัดลอก Client ID และ Client Secret ใส่ใน `.env`
+### รัน
 
-### 4. รันระบบ
 ```bash
 npm start
-# หรือสำหรับ development (auto-restart)
+```
+
+สำหรับ development:
+
+```bash
 npm run dev
 ```
 
-เปิดเบราว์เซอร์ที่ `http://localhost:3000`
+เปิดเว็บที่ `http://localhost:3000`
+
+ถ้ารันแล้วขึ้น `ECONNREFUSED` แปลว่า Express ต่อ MySQL ไม่ได้ ให้ตรวจว่า MySQL ทำงานอยู่และค่า `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` ถูกต้อง
 
 ---
 
-## กลุ่มผู้ใช้และสิทธิ์
+## Server และ Routing
 
-| Role | คำอธิบาย | วิธีกำหนด |
-|------|----------|-----------|
-| `student` | นิสิตทั่วไป (default) | สร้างอัตโนมัติเมื่อ login |
-| `staff` | เจ้าหน้าที่ฝ่ายกิจการนิสิต | เปลี่ยนใน `/staff/users` |
+`server.js` เป็น entry point หลัก:
+
+- โหลด `.env`
+- เปิด `trust proxy` สำหรับ Coolify/Traefik
+- เปิด gzip compression
+- อ่าน JSON, form body และ cookie
+- เสิร์ฟ `/uploads` พร้อม cache 7 วัน
+- ผูก API routes ทั้งหมดภายใต้ `/api/*`
+- ตรวจ JWT ก่อนส่ง HTML page
+- แยกหน้า student และ staff ตาม role
+- static files ใน `public/` ใช้ `Cache-Control: no-cache` เพื่อกันไฟล์ HTML/JS/CSS ค้างหลัง deploy
+
+หน้า student:
+
+- `/dashboard`
+- `/activities`
+- `/activity-detail`
+- `/my-activities`
+- `/submit-evidence`
+- `/criteria`
+- `/notifications`
+- `/calendar`
+
+หน้า staff:
+
+- `/staff/dashboard`
+- `/staff/activities`
+- `/staff/evidence`
+- `/staff/reports`
+- `/staff/criteria`
+- `/staff/users`
+
+---
+
+## Database
+
+ไฟล์หลัก: `db/database.js`
+
+การเชื่อมต่อ MySQL:
+
+- ใช้ connection pool จาก `mysql2/promise`
+- `connectionLimit: 10`
+- `charset: utf8mb4`
+- `timezone: '+07:00'`
+- `dateStrings: ['DATE', 'DATETIME']` เพื่อให้ frontend ได้วันที่/เวลาเป็น string ไม่โดนแปลง timezone ผิด
+
+`init()` จะสร้างตารางอัตโนมัติถ้ายังไม่มี และมีระบบเพิ่มคอลัมน์เสริมสำหรับ deployment เก่าด้วย `ensureColumn()`
+
+### ตารางหลัก
+
+#### `users`
+
+เก็บผู้ใช้จาก Google OAuth
+
+| Column | หมายเหตุ |
+|---|---|
+| `id` | primary key |
+| `google_id` | Google OAuth ID |
+| `email` | unique, จำกัดโดเมน TSU ตามค่า `TSU_DOMAIN` |
+| `name` | ชื่อจาก Google |
+| `student_id` | รหัสนิสิต |
+| `role` | `student` หรือ `staff` |
+| `avatar_url` | รูปโปรไฟล์ |
+| `created_at` | เวลาสร้าง |
+
+#### `activity_categories`
+
+หมวดหมู่/เกณฑ์กิจกรรม
+
+| Column | หมายเหตุ |
+|---|---|
+| `id` | primary key |
+| `name` | ชื่อหมวด |
+| `description` | รายละเอียด |
+| `min_hours` | ชั่วโมงขั้นต่ำ |
+| `created_at` | เวลาสร้าง |
+
+มี seed เริ่มต้น 5 หมวด:
+
+- กิจกรรมบำเพ็ญประโยชน์
+- กิจกรรมพัฒนาทักษะ
+- กิจกรรมนันทนาการ
+- กิจกรรมวิชาการ
+- กิจกรรมนิสิตสัมพันธ์
+
+#### `activities`
+
+เก็บกิจกรรม
+
+| Column | หมายเหตุ |
+|---|---|
+| `id` | primary key |
+| `title` | ชื่อกิจกรรม |
+| `description` | รายละเอียด |
+| `category_id` | FK ไป `activity_categories` |
+| `date` | วันที่เริ่มกิจกรรม |
+| `end_date` | วันที่สิ้นสุดกิจกรรม ใช้กับกิจกรรมหลายวัน |
+| `start_time` | เวลาเริ่มกิจกรรม |
+| `end_time` | เวลาจบกิจกรรม |
+| `registration_start_at` | วันเวลาเปิดรับสมัคร |
+| `registration_end_at` | วันเวลาปิดรับสมัคร |
+| `location` | สถานที่ |
+| `capacity` | 0 หมายถึงไม่จำกัด |
+| `hours_credit` | ชั่วโมงกิจกรรม |
+| `status` | `open`, `closed`, `cancelled` |
+| `created_by` | staff ที่สร้าง |
+| `created_at`, `updated_at` | audit time |
+
+คอลัมน์ `end_date`, `registration_start_at`, `registration_end_at` ถูกจัดเป็น optional compatibility column ผ่านตัวแปร `activityColumns` เพื่อให้ระบบไม่ล่มถ้าฐานข้อมูลเก่ายัง migrate ไม่ครบ
+
+#### `activity_locations`
+
+เก็บห้อง/สถานที่ล่วงหน้าสำหรับ staff เลือกใช้ตอนสร้างกิจกรรม
+
+| Column | หมายเหตุ |
+|---|---|
+| `id` | primary key |
+| `name` | ชื่อห้อง/สถานที่ unique |
+| `created_at` | เวลาสร้าง |
+
+#### `activity_registrations`
+
+เก็บการลงทะเบียนกิจกรรม
+
+| Column | หมายเหตุ |
+|---|---|
+| `id` | primary key |
+| `activity_id` | FK ไป `activities` |
+| `user_id` | FK ไป `users` |
+| `status` | `registered`, `attended`, `absent` |
+| `registered_at` | เวลาลงทะเบียน |
+| `checked_in_at` | เวลาเช็กชื่อ |
+
+มี unique key `activity_id + user_id`
+
+#### `evidence_submissions`
+
+เก็บหลักฐานกิจกรรม
+
+| Column | หมายเหตุ |
+|---|---|
+| `id` | primary key |
+| `user_id` | เจ้าของหลักฐาน |
+| `activity_id` | กิจกรรม |
+| `file_path` | path ไฟล์ใน `/uploads` |
+| `file_type` | ประเภทไฟล์ |
+| `description` | คำอธิบาย |
+| `status` | `pending`, `approved`, `rejected` |
+| `reviewer_id` | staff ผู้ตรวจ |
+| `reviewer_note` | หมายเหตุจาก staff |
+| `reviewed_at`, `submitted_at` | เวลาตรวจ/ยื่น |
+
+#### `notifications`
+
+เก็บการแจ้งเตือน
+
+| Column | หมายเหตุ |
+|---|---|
+| `id` | primary key |
+| `user_id` | ผู้รับ |
+| `title` | หัวข้อ |
+| `message` | ข้อความ |
+| `type` | เช่น `info`, `evidence_approved`, `evidence_rejected` |
+| `is_read` | 0/1 |
+| `created_at` | เวลาสร้าง |
 
 ---
 
 ## API Reference
 
-### Authentication
-| Method | Endpoint | คำอธิบาย |
-|--------|----------|----------|
-| GET | `/api/auth/google` | เริ่มต้น Google OAuth |
-| GET | `/api/auth/google/callback` | OAuth callback |
-| GET | `/api/auth/me` | ข้อมูล user ปัจจุบัน |
-| POST | `/api/auth/logout` | ออกจากระบบ |
+### Auth
+
+| Method | Endpoint | สิทธิ์ | คำอธิบาย |
+|---|---|---|---|
+| GET | `/api/auth/google` | public | เริ่ม Google OAuth |
+| GET | `/api/auth/google/callback` | public | OAuth callback |
+| GET | `/api/auth/me` | login | user ปัจจุบัน |
+| POST | `/api/auth/logout` | login | ออกจากระบบ |
 
 ### Activities
+
 | Method | Endpoint | สิทธิ์ | คำอธิบาย |
-|--------|----------|--------|----------|
-| GET | `/api/activities` | ทุกคน | รายการกิจกรรม (search, filter, pagination) |
-| GET | `/api/activities/:id` | ทุกคน | รายละเอียดกิจกรรม |
+|---|---|---|---|
+| GET | `/api/activities` | login | รายการกิจกรรม พร้อม search/filter/pagination |
+| GET | `/api/activities/debug/time` | staff | debug เวลา server และ database |
+| GET | `/api/activities/locations` | login | รายการห้อง/สถานที่ที่บันทึกไว้ |
+| POST | `/api/activities/locations` | staff | เพิ่มห้อง/สถานที่ล่วงหน้า |
+| DELETE | `/api/activities/locations/:id` | staff | ลบห้อง/สถานที่ล่วงหน้า |
+| GET | `/api/activities/:id` | login | รายละเอียดกิจกรรม |
+| PUT | `/api/activities/:id/status` | staff | เปิด/ปิด/ยกเลิกรับสมัครแบบลัด |
 | POST | `/api/activities` | staff | สร้างกิจกรรม |
 | PUT | `/api/activities/:id` | staff | แก้ไขกิจกรรม |
 | DELETE | `/api/activities/:id` | staff | ลบกิจกรรม |
-| POST | `/api/activities/:id/register` | student | ลงทะเบียน |
-| DELETE | `/api/activities/:id/register` | student | ยกเลิกการลงทะเบียน |
+| POST | `/api/activities/:id/register` | student | ลงทะเบียนกิจกรรม |
+| DELETE | `/api/activities/:id/register` | student | ยกเลิกลงทะเบียน |
 
-#### Query Parameters (GET /api/activities)
-| Parameter | ประเภท | คำอธิบาย |
-|-----------|--------|----------|
-| `search` | string | ค้นหาชื่อ/รายละเอียด/สถานที่ |
-| `category` | number | ID หมวดหมู่ |
-| `status` | string | open / closed / cancelled |
-| `date` | string | YYYY-MM-DD |
-| `page` | number | หน้า (default: 1) |
-| `limit` | number | จำนวนต่อหน้า (default: 10) |
+`GET /api/activities` รองรับ query:
+
+| Query | ตัวอย่าง | หมายเหตุ |
+|---|---|---|
+| `search` | `อบรม` | ค้นชื่อ รายละเอียด สถานที่ |
+| `category` | `1` | filter หมวดหมู่ |
+| `status` | `open` | `open`, `closed`, `cancelled` |
+| `date` | `2026-06-13` | ถ้าเป็นกิจกรรมหลายวันจะ match ในช่วง `date` ถึง `end_date` |
+| `page` | `1` | default 1 |
+| `limit` | `10` | default 10 |
+
+ฟิลด์กิจกรรมที่ API ส่งกลับมีข้อมูลช่วย frontend เช่น:
+
+- `category_name`
+- `registered_count`
+- `is_registered`
+- `registration_not_started`
+- `registration_ended`
+- `registration_after_start`
+- `registration_before_end`
+
+กติกาการลงทะเบียน:
+
+- ต้องเป็น `student`
+- กิจกรรมต้อง `status = open`
+- ถ้าตั้ง `registration_start_at` ต้องถึงเวลาเปิดรับสมัครแล้ว
+- ถ้าตั้ง `registration_end_at` ต้องยังไม่หมดเวลารับสมัคร
+- ถ้าเลยช่วงรับสมัครแล้ว คนที่ยังไม่ลงสมัครจะสมัครไม่ได้ และคนที่ลงสมัครแล้วจะยกเลิกไม่ได้
 
 ### Evidence
+
 | Method | Endpoint | สิทธิ์ | คำอธิบาย |
-|--------|----------|--------|----------|
-| GET | `/api/evidence` | staff | รายการหลักฐานทั้งหมด |
+|---|---|---|---|
+| GET | `/api/evidence` | staff | รายการหลักฐานทั้งหมด พร้อม filter/pagination |
 | GET | `/api/evidence/my` | student | หลักฐานของฉัน |
-| POST | `/api/evidence` | student | ยื่นหลักฐาน (multipart/form-data) |
-| PUT | `/api/evidence/:id/review` | staff | อนุมัติ/ปฏิเสธ |
+| POST | `/api/evidence` | student | ยื่นหลักฐาน multipart/form-data |
+| PUT | `/api/evidence/:id/review` | staff | อนุมัติหรือปฏิเสธหลักฐาน |
 
-#### POST /api/evidence (form-data)
-| Field | ประเภท | คำอธิบาย |
-|-------|--------|----------|
-| `activity_id` | number | ID กิจกรรม |
-| `file` | file | ไฟล์หลักฐาน (JPG/PNG/PDF/GIF, max 10MB) |
-| `description` | string | คำอธิบาย |
+ไฟล์หลักฐานรองรับ JPG, PNG, PDF, GIF ขนาดสูงสุด 10MB
 
-### Criteria (หมวดหมู่)
+### Criteria
+
 | Method | Endpoint | สิทธิ์ | คำอธิบาย |
-|--------|----------|--------|----------|
-| GET | `/api/criteria` | ทุกคน | รายการ + ความคืบหน้า (student) |
+|---|---|---|---|
+| GET | `/api/criteria` | login | รายการหมวดหมู่ และ progress ของ student |
 | POST | `/api/criteria` | staff | สร้างหมวดหมู่ |
-| PUT | `/api/criteria/:id` | staff | แก้ไข |
-| DELETE | `/api/criteria/:id` | staff | ลบ |
+| PUT | `/api/criteria/:id` | staff | แก้ไขหมวดหมู่ |
+| DELETE | `/api/criteria/:id` | staff | ลบหมวดหมู่ |
+
+สีของหมวดหมู่ถูกจัดฝั่ง frontend ด้วย `categoryThemeKey()` และ `categoryBadge()` ใน `public/shared/app.js` เพื่อให้หน้า dashboard, criteria และรายการกิจกรรมอ่านง่ายขึ้น
+
+### Notifications
+
+| Method | Endpoint | สิทธิ์ | คำอธิบาย |
+|---|---|---|---|
+| GET | `/api/notifications/my` | login | การแจ้งเตือนของ user ปัจจุบัน |
+| PUT | `/api/notifications/read-all` | login | ทำเครื่องหมายอ่านทั้งหมด |
+| PUT | `/api/notifications/:id/read` | login | ทำเครื่องหมายอ่านรายการเดียว |
+
+สถานะล่าสุดของ UI: เมนูแจ้งเตือนของนิสิตใช้ popover/message box ที่ไอคอนแจ้งเตือน ไม่ใช่เปิดเป็นเมนูเต็มหน้าใน sidebar
 
 ### Reports
+
 | Method | Endpoint | สิทธิ์ | คำอธิบาย |
-|--------|----------|--------|----------|
-| GET | `/api/reports/students` | staff | Export CSV |
-| GET | `/api/reports/summary` | staff | สรุปรายนิสิต |
+|---|---|---|---|
+| GET | `/api/reports/students` | staff | export CSV รายงานนิสิต |
+| GET | `/api/reports/summary` | staff | summary รายบุคคล |
 
 ### Stats
+
 | Method | Endpoint | สิทธิ์ | คำอธิบาย |
-|--------|----------|--------|----------|
-| GET | `/api/stats/dashboard` | ทุกคน | ข้อมูล dashboard (ต่างกันตาม role) |
+|---|---|---|---|
+| GET | `/api/stats/dashboard` | login | ข้อมูล dashboard แยกตาม role |
+
+staff dashboard ใช้เงื่อนไข registration window ตอนนับกิจกรรมที่เปิดรับสมัคร ไม่ได้นับแค่ `status = open`
+
+### Users
+
+| Method | Endpoint | สิทธิ์ | คำอธิบาย |
+|---|---|---|---|
+| GET | `/api/users` | staff | รายการผู้ใช้ พร้อมค้นหา/pagination |
+| PUT | `/api/users/:id/role` | staff | เปลี่ยน role |
+| PUT | `/api/users/me/student-id` | login | บันทึกรหัสนิสิตของตัวเอง |
 
 ---
 
-## Database Schema
+## Frontend Shared Utilities
 
-### users
-| Column | Type | หมายเหตุ |
-|--------|------|---------|
-| id | INTEGER PK | |
-| google_id | TEXT UNIQUE | Google OAuth ID |
-| email | TEXT UNIQUE | @tsu.ac.th |
-| name | TEXT | ชื่อจาก Google |
-| student_id | TEXT | รหัสนิสิต (optional) |
-| role | TEXT | 'student' / 'staff' |
-| avatar_url | TEXT | รูปโปรไฟล์ |
-| created_at | DATETIME | |
+ไฟล์สำคัญ: `public/shared/app.js`
 
-### activities
-| Column | Type | หมายเหตุ |
-|--------|------|---------|
-| id | INTEGER PK | |
-| title | TEXT | ชื่อกิจกรรม |
-| description | TEXT | รายละเอียด |
-| category_id | INTEGER FK | → activity_categories |
-| date | TEXT | YYYY-MM-DD |
-| start_time / end_time | TEXT | HH:MM |
-| location | TEXT | สถานที่ |
-| capacity | INTEGER | 0 = ไม่จำกัด |
-| hours_credit | REAL | ชั่วโมงที่ได้รับ |
-| status | TEXT | open / closed / cancelled |
-| created_by | INTEGER FK | → users |
+หน้าที่หลัก:
 
-### activity_categories
-| Column | Type | หมายเหตุ |
-|--------|------|---------|
-| id | INTEGER PK | |
-| name | TEXT | ชื่อหมวดหมู่ |
-| description | TEXT | |
-| min_hours | REAL | ชั่วโมงขั้นต่ำ |
+- `api.get/post/put/del()` สำหรับเรียก API และจัด error
+- `toast()` สำหรับแจ้งผล
+- `renderLayout()` และ navigation ตาม role
+- `renderPagination()` สำหรับหน้าที่มีรายการจำนวนมาก
+- `confirmDialog()` modal ยืนยัน action แบบ custom แทน `window.confirm`
+- `logout()` เปิด modal ยืนยันก่อนออกจากระบบ
+- `categoryThemeKey()` และ `categoryBadge()` สำหรับแสดงสีหมวดกิจกรรม
+- `formatHourNumber()` และ `formatHours()` แสดงชั่วโมงกิจกรรมโดยไม่บังคับทศนิยม
+- `activityDateLabel()`, `activityTimeLabel()`, `activityScheduleLabel()` สำหรับจัดข้อความวันเวลา
+- `splitDateTime()` และ `buildDateTime()` สำหรับฟอร์มตั้งช่วงเปิดรับสมัคร
+- `registrationState()` และ `activityStatusBadge()` สำหรับสถานะสมัคร
 
-### activity_registrations
-| Column | Type | หมายเหตุ |
-|--------|------|---------|
-| activity_id | INTEGER FK | |
-| user_id | INTEGER FK | |
-| status | TEXT | registered / attended / absent |
-| UNIQUE(activity_id, user_id) | | |
+ไฟล์อื่นใน `public/shared/`:
 
-### evidence_submissions
-| Column | Type | หมายเหตุ |
-|--------|------|---------|
-| user_id / activity_id | INTEGER FK | |
-| file_path | TEXT | path ไฟล์ใน /uploads |
-| description | TEXT | |
-| status | TEXT | pending / approved / rejected |
-| reviewer_id | INTEGER FK | เจ้าหน้าที่ที่ตรวจ |
-| reviewer_note | TEXT | หมายเหตุ |
-
-### notifications
-| Column | Type | หมายเหตุ |
-|--------|------|---------|
-| user_id | INTEGER FK | |
-| title / message | TEXT | |
-| type | TEXT | evidence_approved / rejected / info |
-| is_read | INTEGER | 0/1 |
+- `style.css`: design system, layout, badges, modal, notification popover, time debug card, location preset, custom date/time UI
+- `datepicker.js`: date/time picker ที่ใช้ในฟอร์ม staff รองรับเลือกเวลาและคลิก/ดับเบิลคลิกเพื่อพิมพ์ตัวเลข
+- `calendar.js`: logic ปฏิทินกิจกรรม
+- `icons.js`: SVG icon helper
 
 ---
 
-## Functional Requirements
+## UX/UI ล่าสุดที่ควรรักษาไว้
 
-| รหัส | ฟังก์ชัน | สถานะ |
-|------|---------|-------|
-| FR001 | นิสิต login ผ่าน Google TSU (@tsu.ac.th) | ✅ |
-| FR002 | นิสิตดูตาราง/เกณฑ์กิจกรรม | ✅ |
-| FR003 | นิสิตยื่นหลักฐานเข้าร่วมกิจกรรม | ✅ |
-| FR004 | เจ้าหน้าที่ CRUD กิจกรรม | ✅ |
-| FR005 | เจ้าหน้าที่ login ผ่าน Google TSU | ✅ |
-| FR006 | นิสิตลงทะเบียนเข้าร่วมกิจกรรม | ✅ |
-| FR007 | เจ้าหน้าที่อนุมัติ/ปฏิเสธหลักฐาน | ✅ |
-| FR008 | ระบบแจ้งเตือนเมื่ออนุมัติ/ปฏิเสธ | ✅ |
-| FR009 | Search & Filter กิจกรรม | ✅ |
-| FR010 | Export รายงาน CSV | ✅ |
-| FR011 | Dashboard สรุปสถานะกิจกรรม | ✅ |
-| FR012 | เจ้าหน้าที่กำหนด/แก้ไขเกณฑ์ | ✅ |
-
-## Non-Functional Requirements
-
-| รหัส | ข้อกำหนด | การรองรับ |
-|------|---------|----------|
-| NFR001 | รองรับ 100 users พร้อมกัน | SQLite WAL mode + stateless JWT |
-| NFR002 | แสดงผลภายใน 3 วินาที | SQLite sync query + static HTML |
-| NFR003 | ระบบสิทธิ์ | JWT + Role middleware |
-| NFR004 | เชื่อมต่อระบบทะเบียน | Google OAuth จำกัด @tsu.ac.th |
+- Dashboard นิสิตต้องอ่านง่ายสำหรับผู้ใช้ทั่วไป ไม่ถือว่าผู้ใช้เป็นสายคอม
+- ใช้สีแยกประเภทกิจกรรมทุกที่ที่ต้องเทียบหมวดหมู่ เช่น dashboard, criteria, activity list
+- ชั่วโมงกิจกรรมแสดงเป็นเลขจำนวนเต็มเมื่อไม่มีทศนิยม เช่น `3 ชั่วโมง` ไม่ใช่ `3.0 ชั่วโมง`
+- Logout button ต้องเด่นและเปิด modal ยืนยันก่อนออก
+- Action สำคัญของ staff เช่น ลบกิจกรรม เปลี่ยนสถานะ ตรวจหลักฐาน ลบหมวดหมู่ เปลี่ยน role ต้องใช้ `confirmDialog()`
+- หน้าแจ้งเตือนของนิสิตใช้ popover/message box จากไอคอนแจ้งเตือน
+- ฟอร์ม staff activities รองรับ:
+  - กิจกรรมวันเดียวหรือหลายวัน (`date`, `end_date`)
+  - เปิด/ปิดช่วงรับสมัคร (`registration_start_at`, `registration_end_at`)
+  - ปุ่มลัดเปิด/ปิด/ยกเลิกสถานะรับสมัคร
+  - เลือกห้อง/สถานที่จากรายการที่บันทึกไว้
+  - debug เวลา server/database ในหน้า staff เพื่อเทียบเวลาปิดรับสมัคร
 
 ---
 
 ## Security Notes
 
-- JWT เก็บใน `httpOnly` cookie (ป้องกัน XSS)
-- Google OAuth จำกัดเฉพาะ domain `tsu.ac.th`
-- File upload จำกัด type (JPG/PNG/PDF/GIF) และขนาด (10MB)
-- Role-based middleware บน ทุก API endpoint
-- SQL Injection: ใช้ prepared statements ทุกที่
+- JWT เก็บใน `httpOnly` cookie
+- Google OAuth จำกัดโดเมนตาม `TSU_DOMAIN` ค่าเริ่มต้นคือ `tsu.ac.th`
+- API ที่ต้อง login ใช้ `requireAuth`
+- API staff ใช้ `requireRole('staff')`
+- ใช้ prepared statements ของ `mysql2` ทุก query ที่รับค่าจากผู้ใช้
+- Upload จำกัดชนิดไฟล์และขนาด
+- อย่า commit `.env`, `node_modules`, หรือไฟล์ runtime ที่ไม่จำเป็น
 
 ---
 
-## หน้าต่างๆ
+## คำสั่งที่ใช้บ่อย
 
-| URL | สิทธิ์ | คำอธิบาย |
-|-----|--------|----------|
-| `/login` | ทุกคน | หน้าเข้าสู่ระบบ |
-| `/dashboard` | student | แดชบอร์ดนิสิต |
-| `/activities` | student | รายการกิจกรรม |
-| `/activity-detail?id=X` | student | รายละเอียดกิจกรรม |
-| `/my-activities` | student | กิจกรรมที่ลงทะเบียน |
-| `/submit-evidence?id=X` | student | ยื่นหลักฐาน |
-| `/criteria` | student | เกณฑ์และความคืบหน้า |
-| `/notifications` | student | การแจ้งเตือน |
-| `/staff/dashboard` | staff | แดชบอร์ดเจ้าหน้าที่ |
-| `/staff/activities` | staff | จัดการกิจกรรม |
-| `/staff/evidence` | staff | ตรวจหลักฐาน |
-| `/staff/reports` | staff | รายงาน + Export CSV |
-| `/staff/criteria` | staff | จัดการเกณฑ์ |
-| `/staff/users` | staff | จัดการผู้ใช้ |
+### ตรวจสถานะ Git
+
+```bash
+git status --short
+git log --oneline -5
+```
+
+### ตรวจ syntax ฝั่ง Node
+
+```bash
+node --check server.js
+node --check db/database.js
+node --check routes/activities.js
+node --check routes/auth.js
+node --check routes/criteria.js
+node --check routes/evidence.js
+node --check routes/notifications.js
+node --check routes/reports.js
+node --check routes/stats.js
+node --check routes/users.js
+node --check public/shared/app.js
+node --check public/shared/calendar.js
+node --check public/shared/datepicker.js
+node --check public/shared/icons.js
+```
+
+### ตรวจ inline script ใน HTML
+
+```bash
+node -e "const fs=require('fs'),path=require('path');function walk(d){return fs.readdirSync(d,{withFileTypes:true}).flatMap(x=>{const p=path.join(d,x.name);return x.isDirectory()?walk(p):p})}let ok=true;for(const f of walk('public').filter(f=>f.endsWith('.html'))){const h=fs.readFileSync(f,'utf8');[...h.matchAll(/<script(?![^>]*\\bsrc=)[^>]*>([\\s\\S]*?)<\\/script>/gi)].forEach((m,i)=>{try{new Function(m[1])}catch(e){ok=false;console.error('FAIL '+f+' script '+(i+1)+': '+e.message)}})}console.log(ok?'OK':'HTML script check failed');process.exit(ok?0:1)"
+```
+
+### รันแอป
+
+```bash
+npm start
+```
+
+---
+
+## แนวทางทำงานสำหรับ Agent ถัดไป
+
+1. อ่าน `Agent.md` ก่อน จากนั้นค่อยอ่านไฟล์ที่เกี่ยวข้องกับงานจริง
+2. ตรวจ `git status --short` ก่อนแก้ทุกครั้ง เพราะอาจมีงานของผู้ใช้ค้างอยู่
+3. ห้าม revert งานที่ไม่ได้ทำเอง
+4. ใช้ `rg` ค้นหาไฟล์/ข้อความก่อนใช้คำสั่งที่ช้ากว่า
+5. แก้ไฟล์แบบ scoped ตามคำขอ อย่า refactor ใหญ่โดยไม่จำเป็น
+6. ถ้าแก้ frontend ให้ตรวจอย่างน้อย syntax ของ JS และ inline script
+7. ถ้าแก้ behavior ที่พึ่ง DB ให้ทดสอบจริงเมื่อ MySQL พร้อม ถ้า DB ไม่พร้อมให้บอกข้อจำกัดชัดเจน
+8. หลังแก้ shared JS/CSS ควร bump query version ใน HTML ที่ import asset เพื่อกัน browser cache
+9. ถ้าเพิ่ม API ใหม่ ให้เพิ่มในเอกสารนี้ด้วย
+10. ถ้าเปลี่ยน schema ให้เพิ่มทั้ง `CREATE TABLE` และ migration/compatibility path ใน `db/database.js`
+
+---
+
+## สถานะ Git ล่าสุดที่ทราบ
+
+remote หลัก: `origin git@github.com:anonsrirat/Student_Activities.git`
+branch หลัก: `main`
+
+commit ล่าสุดก่อนอัปเดตเอกสารนี้:
+
+```text
+7dd30b9 ปรับปรุงการรับสมัครและยืนยันแอคชัน
+898f0df แก้ปัญหาแคชไฟล์ทำให้โหลดกิจกรรมไม่ได้
+dc75e98 แก้โหลดข้อมูลเมื่อฐานข้อมูลยังไม่อัปเดต
+e6e2dfd ปรับปรุง UX กิจกรรมและการตั้งเวลา
+3d50bd2 ปรับปรุงครั้งใหญ่: ไอคอน SVG + ปฏิทินกิจกรรม + เพิ่มความเร็ว
+```
+
+ไฟล์ `.serena/` เป็น metadata ของเครื่องมือช่วยโค้ดในเครื่อง ไม่ควร commit เว้นแต่ผู้ดูแลโปรเจกต์สั่งชัดเจน

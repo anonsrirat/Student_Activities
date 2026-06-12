@@ -430,6 +430,48 @@ select.form-control { cursor: pointer; }
   display: flex;
   align-items: center;
 }
+
+/* ===== Custom Category Select ===== */
+.cat-select { position: relative; }
+.cat-select-trigger {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; cursor: pointer;
+  min-height: 40px;
+}
+.cat-select-trigger .cat-select-value { flex: 1; display: flex; align-items: center; }
+.cat-select-trigger .cat-select-placeholder { color: var(--text-light); font-size: .875rem; }
+.cat-select-trigger .cat-select-arrow {
+  width: 18px; height: 18px; color: var(--text-muted);
+  transition: transform .2s;
+  flex-shrink: 0;
+}
+.cat-select.open .cat-select-arrow { transform: rotate(180deg); }
+.cat-select-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: 500;
+  max-height: 260px;
+  overflow-y: auto;
+  animation: dpIn .15s ease;
+}
+.cat-select-option {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px;
+  cursor: pointer;
+  font-size: .875rem;
+  border: none; background: none; width: 100%; text-align: left;
+  transition: background .12s;
+}
+.cat-select-option:hover { background: var(--bg); }
+.cat-select-option.selected { background: var(--primary-light); }
+.cat-select-option + .cat-select-option { border-top: 1px solid var(--border); }
+
+/* ===== Form Validation ===== */
+.form-control.invalid { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(220,38,38,.1); }
+.cat-select-trigger.invalid { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(220,38,38,.1); }
 .location-row {
   display: grid;
   grid-template-columns: 1fr auto;
