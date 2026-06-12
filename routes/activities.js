@@ -1,8 +1,42 @@
 const express = require('express');
-const { pool } = require('../db/database');
+const { pool, activityColumns } = require('../db/database');
 const { requireAuth } = require('../middleware/auth');
 const { requireRole } = require('../middleware/role');
 const router = express.Router();
+
+function dateRangeExpr(alias = 'a') {
+  return activityColumns.end_date ? `COALESCE(${alias}.end_date, ${alias}.date)` : `${alias}.date`;
+}
+
+function pushActivityFields(fields, values, body) {
+  if (activityColumns.end_date) {
+    fields.push('end_date');
+    values.push(body.end_date || null);
+  }
+  if (activityColumns.registration_start_at) {
+    fields.push('registration_start_at');
+    values.push(body.registration_start_at || null);
+  }
+  if (activityColumns.registration_end_at) {
+    fields.push('registration_end_at');
+    values.push(body.registration_end_at || null);
+  }
+}
+
+function pushActivityUpdates(sets, values, body) {
+  if (activityColumns.end_date) {
+    sets.push('end_date=?');
+    values.push(body.end_date || null);
+  }
+  if (activityColumns.registration_start_at) {
+    sets.push('registration_start_at=?');
+    values.push(body.registration_start_at || null);
+  }
+  if (activityColumns.registration_end_at) {
+    sets.push('registration_end_at=?');
+    values.push(body.registration_end_at || null);
+  }
+}
 
 router.get('/', requireAuth, async (req, res) => {
   try {
@@ -18,8 +52,11 @@ router.get('/', requireAuth, async (req, res) => {
     }
     if (category) { where.push('a.category_id = ?'); params.push(category); }
     if (status) { where.push('a.status = ?'); params.push(status); }
-    if (date) { where.push('a.date <= ? AND COALESCE(a.end_date, a.date) >= ?'); params.push(date, date); }
-    if (from) { where.push('COALESCE(a.end_date, a.date) >= ?'); params.push(from); }
+    if (date) {
+      if (activityColumns.end_date) { where.push('a.date <= ? AND COALESCE(a.end_date, a.date) >= ?'); params.push(date, date); }
+      else { where.push('a.date = ?'); params.push(date); }
+    }
+    if (from) { where.push(`${dateRangeExpr('a')} >= ?`); params.push(from); }
     if (to) { where.push('a.date <= ?'); params.push(to); }
 
     const whereStr = where.join(' AND ');
@@ -69,15 +106,14 @@ router.post('/', requireAuth, requireRole('staff'), async (req, res) => {
     if (registration_start_at && registration_end_at && registration_end_at < registration_start_at) {
       return res.status(400).json({ error: 'เวลาปิดรับสมัครต้องไม่ก่อนเวลาเปิดรับสมัคร' });
     }
+    const fields = ['title', 'description', 'category_id', 'date', 'start_time', 'end_time', 'location', 'capacity', 'hours_credit', 'status', 'created_by'];
+    const values = [title, description || null, category_id || null, date, start_time || null, end_time || null,
+      location || null, parseInt(capacity) || 0, parseFloat(hours_credit) || 0, status || 'open', req.user.id];
+    pushActivityFields(fields, values, { end_date, registration_start_at, registration_end_at });
+    const placeholders = fields.map(() => '?').join(', ');
     const [result] = await pool.query(`
-      INSERT INTO activities (
-        title, description, category_id, date, end_date, start_time, end_time,
-        registration_start_at, registration_end_at, location, capacity, hours_credit, status, created_by
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [title, description || null, category_id || null, date, end_date || null, start_time || null, end_time || null,
-       registration_start_at || null, registration_end_at || null, location || null,
-       parseInt(capacity) || 0, parseFloat(hours_credit) || 0, status || 'open', req.user.id]);
+      INSERT INTO activities (${fields.join(', ')})
+      VALUES (${placeholders})`, values);
     const [rows] = await pool.query('SELECT * FROM activities WHERE id = ?', [result.insertId]);
     res.status(201).json(rows[0]);
   } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
@@ -96,12 +132,12 @@ router.put('/:id', requireAuth, requireRole('staff'), async (req, res) => {
     if (registration_start_at && registration_end_at && registration_end_at < registration_start_at) {
       return res.status(400).json({ error: 'เวลาปิดรับสมัครต้องไม่ก่อนเวลาเปิดรับสมัคร' });
     }
-    await pool.query(`
-      UPDATE activities SET title=?, description=?, category_id=?, date=?, end_date=?, start_time=?, end_time=?,
-        registration_start_at=?, registration_end_at=?, location=?, capacity=?, hours_credit=?, status=? WHERE id=?`,
-      [title, description || null, category_id || null, date, end_date || null, start_time || null, end_time || null,
-       registration_start_at || null, registration_end_at || null, location || null,
-       parseInt(capacity) || 0, parseFloat(hours_credit) || 0, status || 'open', req.params.id]);
+    const sets = ['title=?', 'description=?', 'category_id=?', 'date=?', 'start_time=?', 'end_time=?', 'location=?', 'capacity=?', 'hours_credit=?', 'status=?'];
+    const values = [title, description || null, category_id || null, date, start_time || null, end_time || null,
+      location || null, parseInt(capacity) || 0, parseFloat(hours_credit) || 0, status || 'open'];
+    pushActivityUpdates(sets, values, { end_date, registration_start_at, registration_end_at });
+    values.push(req.params.id);
+    await pool.query(`UPDATE activities SET ${sets.join(', ')} WHERE id=?`, values);
     const [rows] = await pool.query('SELECT * FROM activities WHERE id = ?', [req.params.id]);
     res.json(rows[0]);
   } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
@@ -119,8 +155,8 @@ router.post('/:id/register', requireAuth, requireRole('student'), async (req, re
   try {
     const [acts] = await pool.query(`
       SELECT *,
-        registration_start_at IS NOT NULL AND registration_start_at > NOW() as registration_not_started,
-        registration_end_at IS NOT NULL AND registration_end_at < NOW() as registration_ended
+        ${activityColumns.registration_start_at ? 'registration_start_at IS NOT NULL AND registration_start_at > NOW()' : '0'} as registration_not_started,
+        ${activityColumns.registration_end_at ? 'registration_end_at IS NOT NULL AND registration_end_at < NOW()' : '0'} as registration_ended
       FROM activities WHERE id = ?`, [req.params.id]);
     if (!acts.length) return res.status(404).json({ error: 'ไม่พบกิจกรรม' });
     const activity = acts[0];

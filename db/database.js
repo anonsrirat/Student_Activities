@@ -102,9 +102,33 @@ const SCHEMA = `
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 `;
 
+const activityColumns = {
+  end_date: false,
+  registration_start_at: false,
+  registration_end_at: false
+};
+
 async function ensureColumn(conn, table, column, definition) {
   const [cols] = await conn.query(`SHOW COLUMNS FROM \`${table}\` LIKE ?`, [column]);
-  if (!cols.length) await conn.query(`ALTER TABLE \`${table}\` ADD COLUMN ${definition}`);
+  if (cols.length) {
+    if (table === 'activities' && Object.prototype.hasOwnProperty.call(activityColumns, column)) {
+      activityColumns[column] = true;
+    }
+    return;
+  }
+
+  try {
+    await conn.query(`ALTER TABLE \`${table}\` ADD COLUMN ${definition}`);
+    if (table === 'activities' && Object.prototype.hasOwnProperty.call(activityColumns, column)) {
+      activityColumns[column] = true;
+    }
+  } catch (err) {
+    if (table === 'activities' && Object.prototype.hasOwnProperty.call(activityColumns, column)) {
+      console.warn(`[WARN] Optional activity column "${column}" is not available: ${err.code || err.message}`);
+      return;
+    }
+    throw err;
+  }
 }
 
 async function init() {
@@ -136,4 +160,4 @@ async function init() {
   }
 }
 
-module.exports = { pool, init };
+module.exports = { pool, init, activityColumns };

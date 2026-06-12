@@ -1,7 +1,11 @@
 const express = require('express');
-const { pool } = require('../db/database');
+const { pool, activityColumns } = require('../db/database');
 const { requireAuth } = require('../middleware/auth');
 const router = express.Router();
+
+function activityColumnSelect(column) {
+  return activityColumns[column] ? `a.${column}` : `NULL as ${column}`;
+}
 
 router.get('/dashboard', requireAuth, async (req, res) => {
   try {
@@ -22,7 +26,7 @@ router.get('/dashboard', requireAuth, async (req, res) => {
     }
 
     const [myRegistrations] = await pool.query(`
-      SELECT ar.*, a.id as activity_id, a.title, a.date, a.end_date, a.start_time, a.end_time,
+      SELECT ar.*, a.id as activity_id, a.title, a.date, ${activityColumnSelect('end_date')}, a.start_time, a.end_time,
         a.hours_credit, a.status as activity_status, c.id as category_id, c.name as category_name
       FROM activity_registrations ar
       JOIN activities a ON ar.activity_id = a.id
@@ -56,7 +60,7 @@ router.get('/dashboard', requireAuth, async (req, res) => {
       SELECT a.*, c.id as category_id, c.name as category_name
       FROM activities a
       LEFT JOIN activity_categories c ON a.category_id = c.id
-      WHERE a.status = 'open' AND COALESCE(a.end_date, a.date) >= CURDATE()
+      WHERE a.status = 'open' AND ${activityColumns.end_date ? 'COALESCE(a.end_date, a.date)' : 'a.date'} >= CURDATE()
       ORDER BY a.date ASC LIMIT 5`);
 
     res.json({
