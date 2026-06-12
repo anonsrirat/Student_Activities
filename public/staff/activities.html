@@ -16,11 +16,11 @@
       <main class="content">
         <div class="page-header">
           <div><h1>จัดการกิจกรรม</h1><p>เพิ่ม แก้ไข และลบกิจกรรม</p></div>
-          <button class="btn btn-primary" onclick="openCreateModal()">+ เพิ่มกิจกรรม</button>
+          <button class="btn btn-primary" onclick="openCreateModal()" id="add-btn">เพิ่มกิจกรรม</button>
         </div>
 
         <div class="filter-bar">
-          <input type="text" id="search" class="form-control search-input" placeholder="🔍 ค้นหากิจกรรม...">
+          <input type="text" id="search" class="form-control search-input" placeholder="ค้นหากิจกรรม...">
           <select id="filter-category" class="form-control"><option value="">ทุกหมวดหมู่</option></select>
           <select id="filter-status" class="form-control">
             <option value="">ทุกสถานะ</option>
@@ -32,7 +32,7 @@
 
         <div class="card">
           <div id="table-wrap">
-            <div class="empty-state" style="padding:48px"><div class="empty-icon">📅</div><p>กำลังโหลด...</p></div>
+            <div class="empty-state" style="padding:48px"><p>กำลังโหลด...</p></div>
           </div>
         </div>
         <div class="pagination" id="pagination"></div>
@@ -45,7 +45,7 @@
     <div class="modal" style="max-width:680px">
       <div class="modal-header">
         <h2 id="modal-title">เพิ่มกิจกรรม</h2>
-        <button class="modal-close">✕</button>
+        <button class="modal-close" aria-label="ปิด" id="modal-close-x"></button>
       </div>
       <div class="modal-body">
         <form id="activity-form">
@@ -109,6 +109,8 @@
     </div>
   </div>
 
+  <script src="/shared/icons.js"></script>
+  <script src="/shared/datepicker.js"></script>
   <script src="/shared/app.js"></script>
   <script>
     let categories = [];
@@ -137,7 +139,7 @@
         const data = await api.get(`/api/activities?${params}`);
         const wrap = document.getElementById('table-wrap');
         if (!data.activities.length) {
-          wrap.innerHTML = '<div class="empty-state" style="padding:48px"><div class="empty-icon">📅</div><h3>ไม่พบกิจกรรม</h3></div>';
+          wrap.innerHTML = `<div class="empty-state" style="padding:48px">${icon('calendar', { size: 48, cls: 'empty-icon' })}<h3>ไม่พบกิจกรรม</h3></div>`;
         } else {
           wrap.innerHTML = `<div class="table-wrap"><table>
             <thead><tr><th>ชื่อกิจกรรม</th><th>วันที่</th><th>หมวดหมู่</th><th>ชั่วโมง</th><th>ผู้สมัคร</th><th>สถานะ</th><th>การดำเนินการ</th></tr></thead>
@@ -151,8 +153,8 @@
                 <td>${badgeStatus(a.status)}</td>
                 <td>
                   <div class="flex gap-2">
-                    <button class="btn btn-outline btn-sm" onclick='openEditModal(${JSON.stringify(a)})'>แก้ไข</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteActivity(${a.id})">ลบ</button>
+                    <button class="btn btn-outline btn-sm" onclick='openEditModal(${JSON.stringify(a)})' title="แก้ไข">${icon('edit', { size: 14 })}</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteActivity(${a.id})" title="ลบ">${icon('trash', { size: 14 })}</button>
                   </div>
                 </td>
               </tr>`).join('')}
@@ -166,6 +168,9 @@
       document.getElementById('modal-title').textContent = 'เพิ่มกิจกรรม';
       document.getElementById('edit-id').value = '';
       document.getElementById('activity-form').reset();
+      document.getElementById('f-date')._setDate?.('');
+      document.getElementById('f-start')._setTime?.('');
+      document.getElementById('f-end')._setTime?.('');
       openModal('activity-modal');
     }
 
@@ -175,9 +180,10 @@
       document.getElementById('f-title').value = a.title || '';
       document.getElementById('f-category').value = a.category_id || '';
       document.getElementById('f-status').value = a.status || 'open';
-      document.getElementById('f-date').value = a.date || '';
-      document.getElementById('f-start').value = a.start_time || '';
-      document.getElementById('f-end').value = a.end_time || '';
+      const dateVal = a.date ? a.date.slice(0, 10) : '';
+      document.getElementById('f-date')._setDate?.(dateVal);
+      document.getElementById('f-start')._setTime?.(a.start_time || '');
+      document.getElementById('f-end')._setTime?.(a.end_time || '');
       document.getElementById('f-location').value = a.location || '';
       document.getElementById('f-capacity').value = a.capacity || 0;
       document.getElementById('f-hours').value = a.hours_credit || 0;
@@ -221,6 +227,8 @@
     }
 
     (async () => {
+      initAllPickers();
+      document.getElementById('add-btn').innerHTML = `${icon('plus', { size: 16 })} เพิ่มกิจกรรม`;
       await initLayout({ activePage: '/staff/activities', requireRole: 'staff' });
       await loadCategories();
       loadActivities();

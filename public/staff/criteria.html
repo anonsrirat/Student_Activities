@@ -16,11 +16,11 @@
       <main class="content">
         <div class="page-header">
           <div><h1>จัดการเกณฑ์กิจกรรม</h1><p>กำหนดหมวดหมู่และชั่วโมงขั้นต่ำที่นิสิตต้องผ่าน</p></div>
-          <button class="btn btn-primary" onclick="openCreate()">+ เพิ่มหมวดหมู่</button>
+          <button class="btn btn-primary" onclick="openCreate()" id="add-btn">เพิ่มหมวดหมู่</button>
         </div>
 
         <div id="criteria-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
-          <div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📋</div><p>กำลังโหลด...</p></div>
+          <div class="empty-state" style="grid-column:1/-1"><p>กำลังโหลด...</p></div>
         </div>
       </main>
     </div>
@@ -56,6 +56,8 @@
     </div>
   </div>
 
+  <script src="/shared/icons.js"></script>
+  <script src="/shared/datepicker.js"></script>
   <script src="/shared/app.js"></script>
   <script>
     async function load() {
@@ -63,7 +65,7 @@
         const data = await api.get('/api/criteria');
         const el = document.getElementById('criteria-list');
         if (!data.length) {
-          el.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📋</div><h3>ยังไม่มีหมวดหมู่</h3><p>เพิ่มหมวดหมู่แรกได้เลย</p></div>';
+          el.innerHTML = `<div class="empty-state" style="grid-column:1/-1">${icon('clipboard', { size: 48, cls: 'empty-icon' })}<h3>ยังไม่มีหมวดหมู่</h3><p>เพิ่มหมวดหมู่แรกได้เลย</p></div>`;
           return;
         }
         el.innerHTML = data.map(c => `
@@ -72,8 +74,8 @@
               <div class="flex justify-between items-center mb-2">
                 <h3 class="font-semibold">${c.name}</h3>
                 <div class="flex gap-2">
-                  <button class="btn btn-outline btn-sm" onclick='openEdit(${JSON.stringify(c)})'>แก้ไข</button>
-                  <button class="btn btn-danger btn-sm" onclick="del(${c.id})">ลบ</button>
+                  <button class="btn btn-outline btn-sm" onclick='openEdit(${JSON.stringify(c)})' title="แก้ไข">${icon('edit', { size: 14 })}</button>
+                  <button class="btn btn-danger btn-sm" onclick="del(${c.id})" title="ลบ">${icon('trash', { size: 14 })}</button>
                 </div>
               </div>
               ${c.description ? `<p class="text-sm text-muted mb-3">${c.description}</p>` : ''}
@@ -124,6 +126,7 @@
     }
 
     (async () => {
+      document.getElementById('add-btn').innerHTML = `${icon('plus', { size: 16 })} เพิ่มหมวดหมู่`;
       await initLayout({ activePage: '/staff/criteria', requireRole: 'staff' });
       load();
     })();

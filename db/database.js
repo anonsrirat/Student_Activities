@@ -117,7 +117,7 @@ async function init() {
         await conn.query('INSERT INTO activity_categories (name, description, min_hours) VALUES (?, ?, ?)', s);
       }
     }
-    console.log('✓ Database initialized');
+    console.log('[OK] Database initialized');
   } finally {
     conn.release();
   }

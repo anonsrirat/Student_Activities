@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const jwt = require('jsonwebtoken');
@@ -10,12 +11,15 @@ const app = express();
 // Trust reverse proxy (Coolify / Traefik) so secure cookies work over HTTPS
 app.set('trust proxy', 1);
 
+// Gzip compression — major speedup for HTML/CSS/JS
+app.use(compression());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Serve uploaded files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), { maxAge: '7d' }));
 
 // API routes
 app.use('/api/auth', require('./routes/auth'));
@@ -46,7 +50,7 @@ app.get('/', (req, res) => {
 });
 
 // Student pages (require auth)
-const studentPages = ['dashboard', 'activities', 'activity-detail', 'my-activities', 'submit-evidence', 'criteria', 'notifications'];
+const studentPages = ['dashboard', 'activities', 'activity-detail', 'my-activities', 'submit-evidence', 'criteria', 'notifications', 'calendar'];
 studentPages.forEach(page => {
   app.get(`/${page}`, (req, res) => {
     const user = getUser(req);
@@ -73,8 +77,11 @@ app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// Static files (CSS, JS, images)
-app.use(express.static(path.join(__dirname, 'public')));
+// Static files (CSS, JS, images) — cache for 7 days
+app.use(express.static(path.join(__dirname, 'public'), {
+  maxAge: process.env.NODE_ENV === 'production' ? '7d' : 0,
+  etag: true
+}));
 
 // 404
 app.use((req, res) => {
@@ -87,12 +94,12 @@ const PORT = process.env.PORT || 3000;
   try {
     await init();
     app.listen(PORT, () => {
-      console.log(`\n🎓 ระบบจัดการกิจกรรมนิสิต TSU`);
-      console.log(`   Server: http://localhost:${PORT}`);
-      console.log(`   Login:  http://localhost:${PORT}/login\n`);
+      console.log(`\n[OK] ระบบจัดการกิจกรรมนิสิต TSU`);
+      console.log(`     Server: http://localhost:${PORT}`);
+      console.log(`     Login:  http://localhost:${PORT}/login\n`);
     });
   } catch (err) {
-    console.error('❌ Database initialization failed:', err.message);
+    console.error('[FAIL] Database initialization failed:', err.message);
     process.exit(1);
   }
 })();

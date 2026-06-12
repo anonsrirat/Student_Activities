@@ -20,7 +20,7 @@
             <select id="export-category" class="form-control" style="width:auto">
               <option value="">ทุกหมวดหมู่</option>
             </select>
-            <a id="export-btn" href="/api/reports/students" class="btn btn-success" download>⬇ Export CSV</a>
+            <a id="export-btn" href="/api/reports/students" class="btn btn-success" download>Export CSV</a>
           </div>
         </div>
 
@@ -28,13 +28,15 @@
         <div class="card mb-4">
           <div class="card-header"><h3>สรุปรายนิสิต</h3></div>
           <div id="summary-wrap">
-            <div class="empty-state" style="padding:48px"><div class="empty-icon">📈</div><p>กำลังโหลด...</p></div>
+            <div class="empty-state" style="padding:48px"><p>กำลังโหลด...</p></div>
           </div>
         </div>
       </main>
     </div>
   </div>
 
+  <script src="/shared/icons.js"></script>
+  <script src="/shared/datepicker.js"></script>
   <script src="/shared/app.js"></script>
   <script>
     async function loadCategories() {
@@ -80,6 +82,7 @@
     }
 
     (async () => {
+      document.getElementById('export-btn').innerHTML = `${icon('download', { size: 16 })} Export CSV`;
       await initLayout({ activePage: '/staff/reports', requireRole: 'staff' });
       loadCategories();
       loadSummary();

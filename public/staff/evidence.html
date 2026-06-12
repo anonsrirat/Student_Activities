@@ -29,7 +29,7 @@
 
         <div class="card">
           <div id="table-wrap">
-            <div class="empty-state" style="padding:48px"><div class="empty-icon">📁</div><p>กำลังโหลด...</p></div>
+            <div class="empty-state" style="padding:48px"><p>กำลังโหลด...</p></div>
           </div>
         </div>
         <div class="pagination" id="pagination"></div>
@@ -59,6 +59,8 @@
     </div>
   </div>
 
+  <script src="/shared/icons.js"></script>
+  <script src="/shared/datepicker.js"></script>
   <script src="/shared/app.js"></script>
   <script>
     let currentPage = 1;
@@ -74,7 +76,7 @@
         const data = await api.get(`/api/evidence?${params}`);
         const wrap = document.getElementById('table-wrap');
         if (!data.evidence.length) {
-          wrap.innerHTML = '<div class="empty-state" style="padding:48px"><div class="empty-icon">📁</div><h3>ไม่มีหลักฐานในขณะนี้</h3></div>';
+          wrap.innerHTML = '<div class="empty-state" style="padding:48px"><h3>ไม่มีหลักฐานในขณะนี้</h3></div>';
         } else {
           wrap.innerHTML = `<div class="table-wrap"><table>
             <thead><tr><th>นิสิต</th><th>กิจกรรม</th><th>วันที่ยื่น</th><th>ไฟล์</th><th>คำอธิบาย</th><th>สถานะ</th><th>การดำเนินการ</th></tr></thead>

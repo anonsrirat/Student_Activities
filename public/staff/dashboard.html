@@ -13,7 +13,7 @@
       <header class="topbar">
         <span class="topbar-title">แดชบอร์ดเจ้าหน้าที่</span>
         <div class="topbar-actions">
-          <a href="/staff/activities" class="btn btn-primary btn-sm">+ สร้างกิจกรรม</a>
+          <a href="/staff/activities" class="btn btn-primary btn-sm" id="top-add">สร้างกิจกรรม</a>
         </div>
       </header>
       <main class="content">
@@ -22,10 +22,10 @@
         </div>
 
         <div class="stats-grid">
-          <div class="stat-card"><div class="stat-icon blue">📅</div><div class="stat-info"><div class="stat-value" id="s-total">-</div><div class="stat-label">กิจกรรมทั้งหมด</div></div></div>
-          <div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-info"><div class="stat-value" id="s-open">-</div><div class="stat-label">กิจกรรมเปิดรับสมัคร</div></div></div>
-          <div class="stat-card"><div class="stat-icon yellow">📝</div><div class="stat-info"><div class="stat-value" id="s-evidence">-</div><div class="stat-label">หลักฐานรอตรวจ</div></div></div>
-          <div class="stat-card"><div class="stat-icon red">👥</div><div class="stat-info"><div class="stat-value" id="s-students">-</div><div class="stat-label">นิสิตทั้งหมด</div></div></div>
+          <div class="stat-card"><div class="stat-icon blue" data-icon="calendar"></div><div class="stat-info"><div class="stat-value" id="s-total">-</div><div class="stat-label">กิจกรรมทั้งหมด</div></div></div>
+          <div class="stat-card"><div class="stat-icon green" data-icon="check-circle"></div><div class="stat-info"><div class="stat-value" id="s-open">-</div><div class="stat-label">กิจกรรมเปิดรับสมัคร</div></div></div>
+          <div class="stat-card"><div class="stat-icon yellow" data-icon="folder"></div><div class="stat-info"><div class="stat-value" id="s-evidence">-</div><div class="stat-label">หลักฐานรอตรวจ</div></div></div>
+          <div class="stat-card"><div class="stat-icon red" data-icon="users"></div><div class="stat-info"><div class="stat-value" id="s-students">-</div><div class="stat-label">นิสิตทั้งหมด</div></div></div>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
@@ -39,11 +39,11 @@
             <div class="card-header"><h3>ลิงก์ด่วน</h3></div>
             <div class="card-body">
               <div style="display:flex;flex-direction:column;gap:10px">
-                <a href="/staff/evidence" class="btn btn-outline w-full" style="justify-content:flex-start;gap:10px">📁 ตรวจสอบหลักฐาน</a>
-                <a href="/staff/activities" class="btn btn-outline w-full" style="justify-content:flex-start;gap:10px">📅 จัดการกิจกรรม</a>
-                <a href="/staff/reports" class="btn btn-outline w-full" style="justify-content:flex-start;gap:10px">📈 ดูรายงาน</a>
-                <a href="/staff/criteria" class="btn btn-outline w-full" style="justify-content:flex-start;gap:10px">📋 จัดการเกณฑ์</a>
-                <a href="/staff/users" class="btn btn-outline w-full" style="justify-content:flex-start;gap:10px">👥 จัดการผู้ใช้</a>
+                <a href="/staff/evidence" class="btn btn-outline w-full quick-link" data-icon="folder">ตรวจสอบหลักฐาน</a>
+                <a href="/staff/activities" class="btn btn-outline w-full quick-link" data-icon="calendar">จัดการกิจกรรม</a>
+                <a href="/staff/reports" class="btn btn-outline w-full quick-link" data-icon="chart">ดูรายงาน</a>
+                <a href="/staff/criteria" class="btn btn-outline w-full quick-link" data-icon="clipboard">จัดการเกณฑ์</a>
+                <a href="/staff/users" class="btn btn-outline w-full quick-link" data-icon="users">จัดการผู้ใช้</a>
               </div>
             </div>
           </div>
@@ -52,9 +52,20 @@
     </div>
   </div>
 
+  <script src="/shared/icons.js"></script>
+  <script src="/shared/datepicker.js"></script>
   <script src="/shared/app.js"></script>
   <script>
     (async () => {
+      // Inflate data-icon stat icons + quick links
+      document.querySelectorAll('.stat-card [data-icon]').forEach(el => el.innerHTML = icon(el.dataset.icon, { size: 24 }));
+      document.querySelectorAll('.quick-link').forEach(el => {
+        el.style.justifyContent = 'flex-start';
+        el.style.gap = '10px';
+        el.insertAdjacentHTML('afterbegin', icon(el.dataset.icon, { size: 16 }));
+      });
+      document.getElementById('top-add').innerHTML = `${icon('plus', { size: 14 })} สร้างกิจกรรม`;
+
       await initLayout({ activePage: '/staff/dashboard', requireRole: 'staff' });
       try {
         const data = await api.get('/api/stats/dashboard');

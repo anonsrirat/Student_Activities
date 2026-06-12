@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const { search = '', category = '', status = '', date = '', page = 1, limit = 10 } = req.query;
+    const { search = '', category = '', status = '', date = '', from = '', to = '', page = 1, limit = 10 } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
     let where = ['1=1'];
@@ -19,6 +19,8 @@ router.get('/', requireAuth, async (req, res) => {
     if (category) { where.push('a.category_id = ?'); params.push(category); }
     if (status) { where.push('a.status = ?'); params.push(status); }
     if (date) { where.push('a.date = ?'); params.push(date); }
+    if (from) { where.push('a.date >= ?'); params.push(from); }
+    if (to) { where.push('a.date <= ?'); params.push(to); }
 
     const whereStr = where.join(' AND ');
 

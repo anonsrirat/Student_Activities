@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ปฏิทินกิจกรรม — ระบบกิจกรรมนิสิต TSU</title>
+  <link rel="stylesheet" href="/shared/style.css">
+  <link rel="prefetch" href="/api/auth/me">
+  <link rel="prefetch" href="/api/activities?limit=200">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-area">
+      <header class="topbar">
+        <span class="topbar-title">ปฏิทินกิจกรรม</span>
+        <div class="topbar-actions">
+          <a href="/notifications" class="notif-btn" id="notif-btn"></a>
+        </div>
+      </header>
+      <main class="content" style="max-width:1400px">
+        <div class="page-header">
+          <div><h1>ปฏิทินกิจกรรม</h1><p>มุมมองรายเดือน — คลิกกิจกรรมเพื่อดูรายละเอียด</p></div>
+        </div>
+
+        <div class="card" style="overflow:hidden">
+          <div id="calendar"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="/shared/icons.js"></script>
+  <script src="/shared/datepicker.js"></script>
+  <script src="/shared/calendar.js"></script>
+  <script src="/shared/app.js"></script>
+  <script>
+    (async () => {
+      await initLayout();
+      new ActivityCalendar(document.getElementById('calendar'));
+    })();
+  </script>
+</body>
+</html>

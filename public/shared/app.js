@@ -36,10 +36,10 @@ function toast(msg, type = 'info') {
     container.id = 'toast-container';
     document.body.appendChild(container);
   }
-  const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+  const iconName = { success: 'check-circle', error: 'alert-circle', warning: 'alert-triangle', info: 'info' }[type] || 'info';
   const el = document.createElement('div');
   el.className = `toast ${type}`;
-  el.innerHTML = `<span>${icons[type] || 'ℹ'}</span><span>${msg}</span>`;
+  el.innerHTML = `${icon(iconName, { size: 18 })}<span>${msg}</span>`;
   container.appendChild(el);
   setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(100%)'; el.style.transition = 'all .3s'; setTimeout(() => el.remove(), 300); }, 3500);
 }
@@ -48,6 +48,9 @@ function toast(msg, type = 'info') {
 function fmtDate(d) {
   if (!d) return '-';
   const date = new Date(d);
+  if (typeof formatThaiDate === 'function') {
+    return formatThaiDate(`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`);
+  }
   return date.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 function fmtDateTime(d) {
@@ -80,31 +83,70 @@ function badgeStatus(status) {
 
 // ===== Sidebar Nav Config =====
 const studentNav = [
-  { href: '/dashboard', icon: '⊞', label: 'แดชบอร์ด' },
-  { href: '/activities', icon: '📅', label: 'กิจกรรมทั้งหมด' },
-  { href: '/my-activities', icon: '✓', label: 'กิจกรรมของฉัน' },
-  { href: '/criteria', icon: '📊', label: 'เกณฑ์กิจกรรม' },
-  { href: '/notifications', icon: '🔔', label: 'การแจ้งเตือน' },
+  { href: '/dashboard', icon: 'dashboard', label: 'แดชบอร์ด' },
+  { href: '/activities', icon: 'calendar', label: 'กิจกรรมทั้งหมด' },
+  { href: '/calendar', icon: 'calendar-check', label: 'ปฏิทินกิจกรรม' },
+  { href: '/my-activities', icon: 'check-square', label: 'กิจกรรมของฉัน' },
+  { href: '/criteria', icon: 'chart-bar', label: 'เกณฑ์กิจกรรม' },
+  { href: '/notifications', icon: 'bell', label: 'การแจ้งเตือน' },
 ];
 const staffNav = [
-  { href: '/staff/dashboard', icon: '⊞', label: 'แดชบอร์ด' },
-  { href: '/staff/activities', icon: '📅', label: 'จัดการกิจกรรม' },
-  { href: '/staff/evidence', icon: '📁', label: 'ตรวจหลักฐาน' },
-  { href: '/staff/reports', icon: '📈', label: 'รายงาน' },
-  { href: '/staff/criteria', icon: '📋', label: 'จัดการเกณฑ์' },
-  { href: '/staff/users', icon: '👥', label: 'จัดการผู้ใช้' },
+  { href: '/staff/dashboard', icon: 'dashboard', label: 'แดชบอร์ด' },
+  { href: '/staff/activities', icon: 'calendar', label: 'จัดการกิจกรรม' },
+  { href: '/calendar', icon: 'calendar-check', label: 'ปฏิทินกิจกรรม' },
+  { href: '/staff/evidence', icon: 'folder', label: 'ตรวจหลักฐาน' },
+  { href: '/staff/reports', icon: 'chart', label: 'รายงาน' },
+  { href: '/staff/criteria', icon: 'clipboard', label: 'จัดการเกณฑ์' },
+  { href: '/staff/users', icon: 'users', label: 'จัดการผู้ใช้' },
 ];
 
-// ===== Layout Init =====
-async function initLayout(opts = {}) {
-  const { activePage = '', requireRole = null } = opts;
+// ===== User Cache (sessionStorage, 5 min TTL) =====
+const USER_CACHE_KEY = '__sa_user';
+const USER_CACHE_TTL = 5 * 60 * 1000;
 
-  let user;
+function getCachedUser() {
   try {
-    user = await api.get('/api/auth/me');
-  } catch {
-    window.location.href = '/login';
-    return null;
+    const raw = sessionStorage.getItem(USER_CACHE_KEY);
+    if (!raw) return null;
+    const { user, ts } = JSON.parse(raw);
+    if (Date.now() - ts > USER_CACHE_TTL) return null;
+    return user;
+  } catch { return null; }
+}
+function setCachedUser(user) {
+  try { sessionStorage.setItem(USER_CACHE_KEY, JSON.stringify({ user, ts: Date.now() })); } catch {}
+}
+function clearCachedUser() {
+  try { sessionStorage.removeItem(USER_CACHE_KEY); } catch {}
+}
+
+// ===== Layout Init (optimized) =====
+async function initLayout(opts = {}) {
+  const { requireRole = null } = opts;
+
+  // Render sidebar IMMEDIATELY from cache if available — non-blocking
+  const cached = getCachedUser();
+  let user = cached;
+
+  if (cached) {
+    renderSidebar(cached);
+    // Refresh in background, don't block
+    api.get('/api/auth/me').then(fresh => {
+      setCachedUser(fresh);
+      if (JSON.stringify(fresh) !== JSON.stringify(cached)) renderSidebar(fresh);
+    }).catch(() => {
+      clearCachedUser();
+      window.location.href = '/login';
+    });
+  } else {
+    try {
+      user = await api.get('/api/auth/me');
+      setCachedUser(user);
+    } catch {
+      window.location.href = '/login';
+      return null;
+    }
+    renderSidebar(user);
   }
 
   if (requireRole && user.role !== requireRole) {
@@ -112,44 +154,49 @@ async function initLayout(opts = {}) {
     return null;
   }
 
-  // Build sidebar
-  const nav = user.role === 'staff' ? staffNav : studentNav;
-  const initials = user.name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'U';
-
-  const sidebar = document.getElementById('sidebar');
-  if (sidebar) {
-    sidebar.innerHTML = `
-      <div class="sidebar-logo">
-        <div class="logo-mark">TSU</div>
-        <div class="logo-text"><strong>ระบบกิจกรรมนิสิต</strong>มหาวิทยาลัยทักษิณ</div>
-      </div>
-      <nav class="sidebar-nav">
-        ${nav.map(item => `
-          <a href="${item.href}" class="nav-item${window.location.pathname === item.href ? ' active' : ''}" data-page="${item.href}">
-            <span class="icon">${item.icon}</span>${item.label}
-          </a>
-        `).join('')}
-      </nav>
-      <div class="sidebar-bottom">
-        <div class="user-mini">
-          ${user.avatar_url ? `<img src="${user.avatar_url}" alt="${user.name}">` : `<div class="user-avatar-placeholder">${initials}</div>`}
-          <div class="user-info">
-            <div class="user-name">${user.name}</div>
-            <div class="user-role">${user.role === 'staff' ? 'เจ้าหน้าที่' : 'นิสิต'}</div>
-          </div>
-          <button onclick="logout()" class="btn btn-ghost btn-sm" title="ออกจากระบบ">⏻</button>
-        </div>
-      </div>
-    `;
-  }
-
-  // Load notifications count
-  loadNotifCount(user.role);
+  // Load notif count in background (non-blocking)
+  loadNotifCount();
 
   return user;
 }
 
-async function loadNotifCount(role) {
+function renderSidebar(user) {
+  const nav = user.role === 'staff' ? staffNav : studentNav;
+  const initials = user.name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'U';
+
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+
+  sidebar.innerHTML = `
+    <div class="sidebar-logo">
+      <div class="logo-mark">TSU</div>
+      <div class="logo-text"><strong>ระบบกิจกรรมนิสิต</strong>มหาวิทยาลัยทักษิณ</div>
+    </div>
+    <nav class="sidebar-nav">
+      ${nav.map(item => `
+        <a href="${item.href}" class="nav-item${window.location.pathname === item.href ? ' active' : ''}" data-page="${item.href}">
+          <span class="icon">${icon(item.icon, { size: 18 })}</span>${item.label}
+        </a>
+      `).join('')}
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="user-mini">
+        ${user.avatar_url ? `<img src="${user.avatar_url}" alt="${user.name}" loading="lazy">` : `<div class="user-avatar-placeholder">${initials}</div>`}
+        <div class="user-info">
+          <div class="user-name">${user.name}</div>
+          <div class="user-role">${user.role === 'staff' ? 'เจ้าหน้าที่' : 'นิสิต'}</div>
+        </div>
+        <button onclick="logout()" class="btn btn-ghost btn-sm" title="ออกจากระบบ">${icon('logout', { size: 16 })}</button>
+      </div>
+    </div>`;
+
+  // Topbar notif button: replace any bell emoji with icon
+  document.querySelectorAll('#notif-btn').forEach(btn => {
+    if (!btn.querySelector('svg')) btn.innerHTML = icon('bell', { size: 18 });
+  });
+}
+
+async function loadNotifCount() {
   try {
     const data = await api.get('/api/notifications/my');
     const btn = document.getElementById('notif-btn');
@@ -162,6 +209,7 @@ async function loadNotifCount(role) {
 }
 
 async function logout() {
+  clearCachedUser();
   try { await api.post('/api/auth/logout', {}); } catch {}
   window.location.href = '/login';
 }
@@ -170,8 +218,13 @@ async function logout() {
 function openModal(id) { document.getElementById(id)?.classList.add('open'); }
 function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
 document.addEventListener('click', e => {
+  const closeBtn = e.target.closest?.('.modal-close');
+  if (closeBtn) { closeBtn.closest('.modal-overlay')?.classList.remove('open'); return; }
   if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('open');
-  if (e.target.classList.contains('modal-close')) e.target.closest('.modal-overlay')?.classList.remove('open');
+});
+// Auto-render X icon inside any empty .modal-close
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.modal-close').forEach(b => { if (!b.innerHTML.trim()) b.innerHTML = icon('x', { size: 18 }); });
 });
 
 // ===== Confirm Dialog =====
@@ -189,12 +242,12 @@ function renderPagination(container, current, total, onChange) {
   const makeBtn = (label, page, disabled, active) => {
     const btn = document.createElement('button');
     btn.className = `page-btn${active ? ' active' : ''}`;
-    btn.textContent = label;
+    btn.innerHTML = label;
     btn.disabled = disabled;
     btn.onclick = () => onChange(page);
     return btn;
   };
-  container.appendChild(makeBtn('‹', current - 1, current === 1, false));
+  container.appendChild(makeBtn(icon('chevron-left', { size: 14 }), current - 1, current === 1, false));
   for (let i = 1; i <= total; i++) {
     if (total > 7 && Math.abs(i - current) > 2 && i !== 1 && i !== total) {
       if (i === current - 3 || i === current + 3) { const d = document.createElement('span'); d.textContent = '…'; d.style.padding = '0 4px'; container.appendChild(d); }
@@ -202,7 +255,7 @@ function renderPagination(container, current, total, onChange) {
     }
     container.appendChild(makeBtn(i, i, false, i === current));
   }
-  container.appendChild(makeBtn('›', current + 1, current === total, false));
+  container.appendChild(makeBtn(icon('chevron-right', { size: 14 }), current + 1, current === total, false));
 }
 
 // ===== File Drop Zone =====
@@ -219,10 +272,10 @@ function initFileDrop(dropEl, inputEl, previewEl) {
     inputEl.files = dt.files;
     previewEl.innerHTML = `
       <div class="file-preview">
-        <span>📄</span>
+        ${icon('file', { size: 18 })}
         <span class="truncate">${file.name}</span>
         <span style="color:var(--text-muted);font-size:.75rem">${(file.size/1024/1024).toFixed(1)} MB</span>
-        <span class="remove-file" onclick="clearFile()">✕</span>
+        <span class="remove-file" onclick="clearFile()">${icon('x', { size: 16 })}</span>
       </div>`;
   }
 
@@ -237,3 +290,16 @@ function debounce(fn, ms = 350) {
   let t;
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
 }
+
+// ===== Prefetch nav links on hover =====
+document.addEventListener('mouseover', e => {
+  const a = e.target.closest('a[href^="/"]:not([href*="#"]):not([data-no-prefetch])');
+  if (!a || a._prefetched) return;
+  const href = a.getAttribute('href');
+  if (href.includes('/api/') || href.includes('/uploads/')) return;
+  a._prefetched = true;
+  const link = document.createElement('link');
+  link.rel = 'prefetch';
+  link.href = href;
+  document.head.appendChild(link);
+}, { passive: true });

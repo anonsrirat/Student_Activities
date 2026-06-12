@@ -13,7 +13,7 @@
       <header class="topbar">
         <span class="topbar-title">กิจกรรมทั้งหมด</span>
         <div class="topbar-actions">
-          <a href="/notifications" class="notif-btn" id="notif-btn">🔔</a>
+          <a href="/notifications" class="notif-btn" id="notif-btn"></a>
         </div>
       </header>
       <main class="content">
@@ -23,7 +23,7 @@
 
         <!-- Filter Bar -->
         <div class="filter-bar">
-          <input type="text" id="search" class="form-control search-input" placeholder="🔍 ค้นหากิจกรรม...">
+          <input type="text" id="search" class="form-control search-input" placeholder="ค้นหากิจกรรม...">
           <select id="filter-category" class="form-control">
             <option value="">ทุกหมวดหมู่</option>
           </select>
@@ -38,7 +38,7 @@
         </div>
 
         <div id="activities-grid" class="activity-grid">
-          <div style="grid-column:1/-1" class="empty-state"><div class="empty-icon">📅</div><p>กำลังโหลดกิจกรรม...</p></div>
+          <div style="grid-column:1/-1" class="empty-state"><p>กำลังโหลดกิจกรรม...</p></div>
         </div>
 
         <div class="pagination" id="pagination"></div>
@@ -46,6 +46,8 @@
     </div>
   </div>
 
+  <script src="/shared/icons.js"></script>
+  <script src="/shared/datepicker.js"></script>
   <script src="/shared/app.js"></script>
   <script>
     let currentPage = 1;
@@ -82,7 +84,7 @@
       try {
         const data = await api.get(`/api/activities?${params}`);
         if (!data.activities.length) {
-          grid.innerHTML = '<div style="grid-column:1/-1" class="empty-state"><div class="empty-icon">🔍</div><h3>ไม่พบกิจกรรม</h3><p>ลองเปลี่ยนคำค้นหาหรือตัวกรอง</p></div>';
+          grid.innerHTML = `<div style="grid-column:1/-1" class="empty-state">${icon('search', { size: 48, cls: 'empty-icon' })}<h3>ไม่พบกิจกรรม</h3><p>ลองเปลี่ยนคำค้นหาหรือตัวกรอง</p></div>`;
         } else {
           grid.innerHTML = data.activities.map(a => renderActivityCard(a)).join('');
         }
@@ -90,7 +92,7 @@
         const pagEl = document.getElementById('pagination');
         renderPagination(pagEl, data.page, data.pages, loadActivities);
       } catch {
-        grid.innerHTML = '<div style="grid-column:1/-1" class="empty-state"><div class="empty-icon">⚠</div><p>เกิดข้อผิดพลาดในการโหลดข้อมูล</p></div>';
+        grid.innerHTML = `<div style="grid-column:1/-1" class="empty-state">${icon('alert-triangle', { size: 48, cls: 'empty-icon' })}<p>เกิดข้อผิดพลาดในการโหลดข้อมูล</p></div>`;
       }
     }
 
@@ -108,10 +110,10 @@
           </div>
           <div class="activity-card-body">
             <div class="activity-card-meta">
-              <div class="activity-meta-row">📅 <span>${fmtDate(a.date)}${a.start_time ? ' ' + a.start_time : ''}${a.end_time ? ' – ' + a.end_time : ''}</span></div>
-              ${a.location ? `<div class="activity-meta-row">📍 <span>${a.location}</span></div>` : ''}
-              <div class="activity-meta-row">⏱ <span>${a.hours_credit} ชั่วโมง</span></div>
-              <div class="activity-meta-row">👥 <span>${a.registered_count}${a.capacity > 0 ? ' / ' + a.capacity : ''} คน${full ? ' (เต็ม)' : ''}</span></div>
+              <div class="activity-meta-row">${icon('calendar', { size: 14 })}<span>${fmtDate(a.date)}${a.start_time ? ' ' + a.start_time : ''}${a.end_time ? ' – ' + a.end_time : ''}</span></div>
+              ${a.location ? `<div class="activity-meta-row">${icon('map-pin', { size: 14 })}<span>${a.location}</span></div>` : ''}
+              <div class="activity-meta-row">${icon('clock', { size: 14 })}<span>${a.hours_credit} ชั่วโมง</span></div>
+              <div class="activity-meta-row">${icon('users', { size: 14 })}<span>${a.registered_count}${a.capacity > 0 ? ' / ' + a.capacity : ''} คน${full ? ' (เต็ม)' : ''}</span></div>
             </div>
           </div>
           <div class="activity-card-footer">
@@ -146,6 +148,7 @@
     }
 
     (async () => {
+      initAllPickers();
       await initLayout({ activePage: '/activities' });
       await loadCategories();
       loadActivities();

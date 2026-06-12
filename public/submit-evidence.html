@@ -13,8 +13,8 @@
       <header class="topbar">
         <span class="topbar-title">ยื่นหลักฐานเข้าร่วมกิจกรรม</span>
         <div class="topbar-actions">
-          <a href="/my-activities" class="btn btn-outline btn-sm">← กลับ</a>
-          <a href="/notifications" class="notif-btn" id="notif-btn">🔔</a>
+          <a href="/my-activities" class="btn btn-outline btn-sm" id="back-btn">กลับ</a>
+          <a href="/notifications" class="notif-btn" id="notif-btn"></a>
         </div>
       </header>
       <main class="content">
@@ -48,7 +48,7 @@
                   <label class="form-label">ไฟล์หลักฐาน <span class="required">*</span></label>
                   <div class="file-drop" id="drop-zone">
                     <input type="file" id="file-input" name="file" accept=".jpg,.jpeg,.png,.gif,.pdf" required>
-                    <div class="icon">📄</div>
+                    <div id="drop-icon" style="color:var(--primary);margin-bottom:8px"></div>
                     <p>คลิกหรือลากไฟล์มาวางที่นี่</p>
                     <p class="text-sm" style="margin-top:4px"><strong>JPG, PNG, GIF, PDF</strong> ขนาดไม่เกิน 10MB</p>
                   </div>
@@ -83,6 +83,8 @@
     </div>
   </div>
 
+  <script src="/shared/icons.js"></script>
+  <script src="/shared/datepicker.js"></script>
   <script src="/shared/app.js"></script>
   <script>
     const presetId = new URLSearchParams(location.search).get('id');
@@ -161,6 +163,8 @@
     });
 
     (async () => {
+      document.getElementById('back-btn').innerHTML = `${icon('arrow-left', { size: 14 })} กลับ`;
+      document.getElementById('drop-icon').innerHTML = icon('upload', { size: 32 });
       await initLayout({ activePage: '/my-activities' });
       initFileDrop(document.getElementById('drop-zone'), document.getElementById('file-input'), document.getElementById('file-preview-wrap'));
       loadMyActivities();

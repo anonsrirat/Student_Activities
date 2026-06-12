@@ -19,7 +19,7 @@
         </div>
 
         <div class="filter-bar">
-          <input type="text" id="search" class="form-control search-input" placeholder="🔍 ค้นหาชื่อ/อีเมล/รหัสนิสิต...">
+          <input type="text" id="search" class="form-control search-input" placeholder="ค้นหาชื่อ/อีเมล/รหัสนิสิต...">
           <select id="filter-role" class="form-control">
             <option value="">ทุก Role</option>
             <option value="student">นิสิต</option>
@@ -29,7 +29,7 @@
 
         <div class="card">
           <div id="table-wrap">
-            <div class="empty-state" style="padding:48px"><div class="empty-icon">👥</div><p>กำลังโหลด...</p></div>
+            <div class="empty-state" style="padding:48px"><p>กำลังโหลด...</p></div>
           </div>
         </div>
         <div class="pagination" id="pagination"></div>
@@ -37,6 +37,8 @@
     </div>
   </div>
 
+  <script src="/shared/icons.js"></script>
+  <script src="/shared/datepicker.js"></script>
   <script src="/shared/app.js"></script>
   <script>
     let currentPage = 1;
@@ -53,7 +55,7 @@
         const data = await api.get(`/api/users?${params}`);
         const wrap = document.getElementById('table-wrap');
         if (!data.users.length) {
-          wrap.innerHTML = '<div class="empty-state" style="padding:48px"><div class="empty-icon">👥</div><h3>ไม่พบผู้ใช้</h3></div>';
+          wrap.innerHTML = '<div class="empty-state" style="padding:48px"><h3>ไม่พบผู้ใช้</h3></div>';
         } else {
           wrap.innerHTML = `<div class="table-wrap"><table>
             <thead><tr><th>ชื่อ</th><th>อีเมล</th><th>รหัสนิสิต</th><th>Role</th><th>เข้าร่วมเมื่อ</th><th>เปลี่ยน Role</th></tr></thead>

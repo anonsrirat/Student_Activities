@@ -13,7 +13,7 @@
       <header class="topbar">
         <span class="topbar-title">แดชบอร์ด</span>
         <div class="topbar-actions">
-          <a href="/notifications" class="notif-btn" id="notif-btn" title="การแจ้งเตือน">🔔</a>
+          <a href="/notifications" class="notif-btn" id="notif-btn" title="การแจ้งเตือน"></a>
         </div>
       </header>
       <main class="content">
@@ -22,15 +22,15 @@
             <h1 id="greeting">สวัสดี!</h1>
             <p>ภาพรวมกิจกรรมและความคืบหน้าของคุณ</p>
           </div>
-          <a href="/activities" class="btn btn-primary">+ สมัครกิจกรรมใหม่</a>
+          <a href="/activities" class="btn btn-primary" id="new-btn">สมัครกิจกรรมใหม่</a>
         </div>
 
         <!-- Stat Cards -->
         <div class="stats-grid" id="stats-grid">
-          <div class="stat-card"><div class="stat-icon blue">📅</div><div class="stat-info"><div class="stat-value" id="stat-attended">-</div><div class="stat-label">กิจกรรมที่เข้าร่วม</div></div></div>
-          <div class="stat-card"><div class="stat-icon green">⏱</div><div class="stat-info"><div class="stat-value" id="stat-hours">-</div><div class="stat-label">ชั่วโมงสะสม</div></div></div>
-          <div class="stat-card"><div class="stat-icon yellow">📝</div><div class="stat-info"><div class="stat-value" id="stat-pending">-</div><div class="stat-label">รอการยืนยัน</div></div></div>
-          <div class="stat-card"><div class="stat-icon red">🎯</div><div class="stat-info"><div class="stat-value" id="stat-criteria">-</div><div class="stat-label">เกณฑ์ที่ผ่านแล้ว</div></div></div>
+          <div class="stat-card"><div class="stat-icon blue" data-icon="calendar"></div><div class="stat-info"><div class="stat-value" id="stat-attended">-</div><div class="stat-label">กิจกรรมที่เข้าร่วม</div></div></div>
+          <div class="stat-card"><div class="stat-icon green" data-icon="clock"></div><div class="stat-info"><div class="stat-value" id="stat-hours">-</div><div class="stat-label">ชั่วโมงสะสม</div></div></div>
+          <div class="stat-card"><div class="stat-icon yellow" data-icon="edit"></div><div class="stat-info"><div class="stat-value" id="stat-pending">-</div><div class="stat-label">รอการยืนยัน</div></div></div>
+          <div class="stat-card"><div class="stat-icon red" data-icon="check-circle"></div><div class="stat-info"><div class="stat-value" id="stat-criteria">-</div><div class="stat-label">เกณฑ์ที่ผ่านแล้ว</div></div></div>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;" id="main-grid">
@@ -38,7 +38,7 @@
           <div class="card">
             <div class="card-header"><h3>ความคืบหน้าตามเกณฑ์</h3><a href="/criteria" class="btn btn-outline btn-sm">ดูทั้งหมด</a></div>
             <div class="card-body" id="criteria-list">
-              <div class="empty-state"><div class="empty-icon">📊</div><p>กำลังโหลด...</p></div>
+              <div class="empty-state"><p>กำลังโหลด...</p></div>
             </div>
           </div>
 
@@ -46,7 +46,7 @@
           <div class="card">
             <div class="card-header"><h3>กิจกรรมที่จะมาถึง</h3><a href="/activities" class="btn btn-outline btn-sm">ดูทั้งหมด</a></div>
             <div class="card-body" id="upcoming-list">
-              <div class="empty-state"><div class="empty-icon">📅</div><p>กำลังโหลด...</p></div>
+              <div class="empty-state"><p>กำลังโหลด...</p></div>
             </div>
           </div>
         </div>
@@ -55,20 +55,26 @@
         <div class="card">
           <div class="card-header"><h3>กิจกรรมล่าสุดของฉัน</h3><a href="/my-activities" class="btn btn-outline btn-sm">ดูทั้งหมด</a></div>
           <div id="my-activities-wrap">
-            <div class="empty-state"><div class="empty-icon">📋</div><p>กำลังโหลด...</p></div>
+            <div class="empty-state"><p>กำลังโหลด...</p></div>
           </div>
         </div>
       </main>
     </div>
   </div>
 
+  <script src="/shared/icons.js"></script>
+  <script src="/shared/datepicker.js"></script>
   <script src="/shared/app.js"></script>
   <script>
     (async () => {
+      // Inflate data-icon placeholders + button + back
+      document.querySelectorAll('[data-icon]').forEach(el => el.innerHTML = icon(el.dataset.icon, { size: 24 }));
+      document.getElementById('new-btn').innerHTML = `${icon('plus', { size: 16 })} สมัครกิจกรรมใหม่`;
+
       const user = await initLayout({ activePage: '/dashboard' });
       if (!user) return;
 
-      document.getElementById('greeting').textContent = `สวัสดี, ${user.name.split(' ')[0]}! 👋`;
+      document.getElementById('greeting').textContent = `สวัสดี, ${user.name.split(' ')[0]}`;
 
       try {
         const data = await api.get('/api/stats/dashboard');
@@ -94,11 +100,11 @@
                 <div class="criteria-bar">
                   <div class="progress"><div class="progress-bar ${barClass}" style="width:${pct}%"></div></div>
                 </div>
-                <span class="criteria-status ${cat.passed ? 'pass' : 'fail'}">${cat.passed ? '✓ ผ่านเกณฑ์' : '✗ ยังไม่ผ่าน'}</span>
+                <span class="criteria-status ${cat.passed ? 'pass' : 'fail'}">${cat.passed ? icon('check', { size: 14 }) + ' ผ่านเกณฑ์' : icon('x', { size: 14 }) + ' ยังไม่ผ่าน'}</span>
               </div>`;
           }).join('');
         } else {
-          criteriaEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><p>ไม่มีข้อมูลเกณฑ์</p></div>';
+          criteriaEl.innerHTML = '<div class="empty-state"><p>ไม่มีข้อมูลเกณฑ์</p></div>';
         }
 
         // Upcoming
@@ -139,7 +145,7 @@
             </table>
           </div>`;
         } else {
-          myEl.innerHTML = '<div class="empty-state" style="padding:32px"><div class="empty-icon">📋</div><h3>ยังไม่ได้ลงทะเบียนกิจกรรม</h3><p>ไปดูกิจกรรมที่เปิดรับสมัครได้เลย</p><a href="/activities" class="btn btn-primary mt-3">ดูกิจกรรม</a></div>';
+          myEl.innerHTML = `<div class="empty-state" style="padding:32px">${icon('clipboard', { size: 48, cls: 'empty-icon' })}<h3>ยังไม่ได้ลงทะเบียนกิจกรรม</h3><p>ไปดูกิจกรรมที่เปิดรับสมัครได้เลย</p><a href="/activities" class="btn btn-primary mt-3">ดูกิจกรรม</a></div>`;
         }
       } catch (e) {
         toast('เกิดข้อผิดพลาดในการโหลดข้อมูล', 'error');

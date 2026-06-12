@@ -13,16 +13,18 @@
       <header class="topbar">
         <span class="topbar-title">รายละเอียดกิจกรรม</span>
         <div class="topbar-actions">
-          <a href="/activities" class="btn btn-outline btn-sm">← กลับ</a>
-          <a href="/notifications" class="notif-btn" id="notif-btn">🔔</a>
+          <a href="/activities" class="btn btn-outline btn-sm" id="back-btn">กลับ</a>
+          <a href="/notifications" class="notif-btn" id="notif-btn"></a>
         </div>
       </header>
       <main class="content" id="content">
-        <div class="empty-state"><div class="empty-icon">📅</div><p>กำลังโหลด...</p></div>
+        <div class="empty-state"><p>กำลังโหลด...</p></div>
       </main>
     </div>
   </div>
 
+  <script src="/shared/icons.js"></script>
+  <script src="/shared/datepicker.js"></script>
   <script src="/shared/app.js"></script>
   <script>
     const id = new URLSearchParams(location.search).get('id');
@@ -30,12 +32,12 @@
     let currentUser = null;
 
     async function loadActivity() {
-      if (!id) { document.getElementById('content').innerHTML = '<div class="empty-state"><div class="empty-icon">⚠</div><h3>ไม่พบกิจกรรม</h3></div>'; return; }
+      if (!id) { document.getElementById('content').innerHTML = `<div class="empty-state">${icon('alert-triangle', { size: 48, cls: 'empty-icon' })}<h3>ไม่พบกิจกรรม</h3></div>`; return; }
       try {
         activity = await api.get(`/api/activities/${id}`);
         render();
       } catch {
-        document.getElementById('content').innerHTML = '<div class="empty-state"><div class="empty-icon">⚠</div><h3>ไม่พบกิจกรรม</h3></div>';
+        document.getElementById('content').innerHTML = `<div class="empty-state">${icon('alert-triangle', { size: 48, cls: 'empty-icon' })}<h3>ไม่พบกิจกรรม</h3></div>`;
       }
     }
 
@@ -55,18 +57,18 @@
               ${activity.category_name ? `<span class="badge badge-student mb-3">${activity.category_name}</span>` : ''}
 
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0">
-                <div class="flex gap-2 items-center"><span style="font-size:1.3rem">📅</span><div><div class="text-sm text-muted">วันที่</div><div class="font-semibold">${fmtDate(activity.date)}</div></div></div>
-                <div class="flex gap-2 items-center"><span style="font-size:1.3rem">🕐</span><div><div class="text-sm text-muted">เวลา</div><div class="font-semibold">${activity.start_time || '-'}${activity.end_time ? ' – ' + activity.end_time : ''}</div></div></div>
-                <div class="flex gap-2 items-center"><span style="font-size:1.3rem">📍</span><div><div class="text-sm text-muted">สถานที่</div><div class="font-semibold">${activity.location || '-'}</div></div></div>
-                <div class="flex gap-2 items-center"><span style="font-size:1.3rem">⏱</span><div><div class="text-sm text-muted">ชั่วโมงที่ได้รับ</div><div class="font-semibold">${activity.hours_credit} ชั่วโมง</div></div></div>
-                <div class="flex gap-2 items-center"><span style="font-size:1.3rem">👥</span><div><div class="text-sm text-muted">ผู้ลงทะเบียน</div><div class="font-semibold">${activity.registered_count}${activity.capacity > 0 ? ' / ' + activity.capacity + ' คน' : ' คน'}</div></div></div>
-                <div class="flex gap-2 items-center"><span style="font-size:1.3rem">👤</span><div><div class="text-sm text-muted">จัดโดย</div><div class="font-semibold">${activity.creator_name || 'เจ้าหน้าที่'}</div></div></div>
+                <div class="meta-block">${icon('calendar', { size: 20 })}<div><div class="text-sm text-muted">วันที่</div><div class="font-semibold">${fmtDate(activity.date)}</div></div></div>
+                <div class="meta-block">${icon('clock', { size: 20 })}<div><div class="text-sm text-muted">เวลา</div><div class="font-semibold">${activity.start_time || '-'}${activity.end_time ? ' – ' + activity.end_time : ''}</div></div></div>
+                <div class="meta-block">${icon('map-pin', { size: 20 })}<div><div class="text-sm text-muted">สถานที่</div><div class="font-semibold">${activity.location || '-'}</div></div></div>
+                <div class="meta-block">${icon('clock', { size: 20 })}<div><div class="text-sm text-muted">ชั่วโมงที่ได้รับ</div><div class="font-semibold">${activity.hours_credit} ชั่วโมง</div></div></div>
+                <div class="meta-block">${icon('users', { size: 20 })}<div><div class="text-sm text-muted">ผู้ลงทะเบียน</div><div class="font-semibold">${activity.registered_count}${activity.capacity > 0 ? ' / ' + activity.capacity + ' คน' : ' คน'}</div></div></div>
+                <div class="meta-block">${icon('user', { size: 20 })}<div><div class="text-sm text-muted">จัดโดย</div><div class="font-semibold">${activity.creator_name || 'เจ้าหน้าที่'}</div></div></div>
               </div>
 
               ${activity.description ? `<div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px"><h3 class="font-semibold mb-2">รายละเอียด</h3><p style="line-height:1.7;color:var(--text-muted)">${activity.description.replace(/\n/g,'<br>')}</p></div>` : ''}
 
               <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
-                ${isStaff ? `<a href="/staff/activities" class="btn btn-outline">← จัดการกิจกรรม</a>` : ''}
+                ${isStaff ? `<a href="/staff/activities" class="btn btn-outline">${icon('arrow-left', { size: 16 })} จัดการกิจกรรม</a>` : ''}
                 ${!isStaff && activity.is_registered
                   ? `<button class="btn btn-danger" onclick="cancelRegister()">ยกเลิกการลงทะเบียน</button>
                      <a href="/submit-evidence?id=${id}" class="btn btn-outline">ยื่นหลักฐาน</a>`
@@ -99,6 +101,7 @@
     }
 
     (async () => {
+      document.getElementById('back-btn').innerHTML = `${icon('arrow-left', { size: 14 })} กลับ`;
       currentUser = await initLayout({ activePage: '/activities' });
       if (currentUser) loadActivity();
     })();

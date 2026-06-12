@@ -13,13 +13,13 @@
       <header class="topbar">
         <span class="topbar-title">กิจกรรมของฉัน</span>
         <div class="topbar-actions">
-          <a href="/notifications" class="notif-btn" id="notif-btn">🔔</a>
+          <a href="/notifications" class="notif-btn" id="notif-btn"></a>
         </div>
       </header>
       <main class="content">
         <div class="page-header">
           <div><h1>กิจกรรมของฉัน</h1><p>รายการกิจกรรมที่ลงทะเบียนและสถานะหลักฐาน</p></div>
-          <a href="/activities" class="btn btn-primary">+ ลงทะเบียนเพิ่ม</a>
+          <a href="/activities" class="btn btn-primary" id="new-btn">ลงทะเบียนเพิ่ม</a>
         </div>
 
         <div class="filter-bar">
@@ -33,13 +33,15 @@
 
         <div class="card">
           <div id="table-wrap">
-            <div class="empty-state" style="padding:48px"><div class="empty-icon">📋</div><p>กำลังโหลด...</p></div>
+            <div class="empty-state" style="padding:48px"><p>กำลังโหลด...</p></div>
           </div>
         </div>
       </main>
     </div>
   </div>
 
+  <script src="/shared/icons.js"></script>
+  <script src="/shared/datepicker.js"></script>
   <script src="/shared/app.js"></script>
   <script>
     let allRegs = [];
@@ -48,7 +50,7 @@
       const data = filterStatus ? allRegs.filter(r => r.status === filterStatus) : allRegs;
       const wrap = document.getElementById('table-wrap');
       if (!data.length) {
-        wrap.innerHTML = '<div class="empty-state" style="padding:48px"><div class="empty-icon">📋</div><h3>ไม่มีกิจกรรม</h3><p>ยังไม่ได้ลงทะเบียนกิจกรรมใดๆ</p><a href="/activities" class="btn btn-primary mt-3">ดูกิจกรรม</a></div>';
+        wrap.innerHTML = '<div class="empty-state" style="padding:48px"><h3>ไม่มีกิจกรรม</h3><p>ยังไม่ได้ลงทะเบียนกิจกรรมใดๆ</p><a href="/activities" class="btn btn-primary mt-3">ดูกิจกรรม</a></div>';
         return;
       }
       wrap.innerHTML = `<div class="table-wrap">
@@ -85,6 +87,7 @@
     }
 
     (async () => {
+      document.getElementById('new-btn').innerHTML = `${icon('plus', { size: 16 })} ลงทะเบียนเพิ่ม`;
       await initLayout({ activePage: '/my-activities' });
       try {
         const data = await api.get('/api/stats/dashboard');
