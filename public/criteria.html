@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>เกณฑ์กิจกรรม — ระบบกิจกรรมนิสิต TSU</title>
+  <link rel="stylesheet" href="/shared/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-area">
+      <header class="topbar">
+        <span class="topbar-title">เกณฑ์กิจกรรม</span>
+        <div class="topbar-actions">
+          <a href="/notifications" class="notif-btn" id="notif-btn">🔔</a>
+        </div>
+      </header>
+      <main class="content">
+        <div class="page-header">
+          <div><h1>เกณฑ์กิจกรรม</h1><p>ชั่วโมงขั้นต่ำที่ต้องผ่านในแต่ละหมวดหมู่</p></div>
+        </div>
+
+        <div id="summary-banner" class="card mb-4" style="display:none">
+          <div class="card-body flex items-center gap-3">
+            <span style="font-size:2rem" id="summary-icon">🏆</span>
+            <div>
+              <div class="font-bold" id="summary-text">-</div>
+              <div class="text-sm text-muted" id="summary-sub">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="criteria-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
+          <div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📊</div><p>กำลังโหลด...</p></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="/shared/app.js"></script>
+  <script>
+    (async () => {
+      await initLayout({ activePage: '/criteria' });
+      try {
+        const categories = await api.get('/api/criteria');
+        const grid = document.getElementById('criteria-grid');
+
+        if (!categories.length) {
+          grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📊</div><h3>ยังไม่มีเกณฑ์กิจกรรม</h3></div>';
+          return;
+        }
+
+        const passed = categories.filter(c => c.passed).length;
+        const banner = document.getElementById('summary-banner');
+        banner.style.display = 'flex';
+        document.getElementById('summary-icon').textContent = passed === categories.length ? '🏆' : passed > 0 ? '📈' : '📋';
+        document.getElementById('summary-text').textContent = `ผ่านเกณฑ์แล้ว ${passed} จาก ${categories.length} หมวดหมู่`;
+        document.getElementById('summary-sub').textContent = passed === categories.length ? 'ยอดเยี่ยม! คุณผ่านเกณฑ์ทุกหมวดหมู่แล้ว' : `อีก ${categories.length - passed} หมวดหมู่ที่ยังไม่ผ่าน`;
+
+        grid.innerHTML = categories.map(cat => {
+          const pct = cat.min_hours > 0 ? Math.min(100, (cat.earned_hours / cat.min_hours) * 100) : 100;
+          const barClass = pct >= 100 ? 'done' : pct > 0 ? 'partial' : 'none';
+          return `
+            <div class="card">
+              <div class="card-body">
+                <div class="flex justify-between items-center mb-2">
+                  <h3 class="font-semibold">${cat.name}</h3>
+                  <span class="badge ${cat.passed ? 'badge-approved' : 'badge-pending'}">${cat.passed ? '✓ ผ่าน' : 'ยังไม่ผ่าน'}</span>
+                </div>
+                ${cat.description ? `<p class="text-sm text-muted mb-3">${cat.description}</p>` : ''}
+                <div class="flex justify-between text-sm mb-2">
+                  <span class="text-muted">ชั่วโมงสะสม</span>
+                  <span class="font-semibold">${(cat.earned_hours || 0).toFixed(1)} / ${cat.min_hours} ชม.</span>
+                </div>
+                <div class="progress" style="height:10px">
+                  <div class="progress-bar ${barClass}" style="width:${pct}%"></div>
+                </div>
+                <div class="text-sm text-muted mt-2">
+                  ${pct >= 100 ? '✓ ผ่านเกณฑ์แล้ว' : `ต้องเพิ่มอีก ${Math.max(0, cat.min_hours - (cat.earned_hours || 0)).toFixed(1)} ชม.`}
+                </div>
+              </div>
+            </div>`;
+        }).join('');
+      } catch (e) {
+        toast('เกิดข้อผิดพลาดในการโหลด', 'error');
+      }
+    })();
+  </script>
+</body>
+</html>

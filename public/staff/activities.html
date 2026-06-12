@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>จัดการกิจกรรม — ระบบกิจกรรมนิสิต TSU</title>
+  <link rel="stylesheet" href="/shared/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-area">
+      <header class="topbar">
+        <span class="topbar-title">จัดการกิจกรรม</span>
+      </header>
+      <main class="content">
+        <div class="page-header">
+          <div><h1>จัดการกิจกรรม</h1><p>เพิ่ม แก้ไข และลบกิจกรรม</p></div>
+          <button class="btn btn-primary" onclick="openCreateModal()">+ เพิ่มกิจกรรม</button>
+        </div>
+
+        <div class="filter-bar">
+          <input type="text" id="search" class="form-control search-input" placeholder="🔍 ค้นหากิจกรรม...">
+          <select id="filter-category" class="form-control"><option value="">ทุกหมวดหมู่</option></select>
+          <select id="filter-status" class="form-control">
+            <option value="">ทุกสถานะ</option>
+            <option value="open">เปิดรับสมัคร</option>
+            <option value="closed">ปิดรับสมัคร</option>
+            <option value="cancelled">ยกเลิก</option>
+          </select>
+        </div>
+
+        <div class="card">
+          <div id="table-wrap">
+            <div class="empty-state" style="padding:48px"><div class="empty-icon">📅</div><p>กำลังโหลด...</p></div>
+          </div>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal สร้าง/แก้ไขกิจกรรม -->
+  <div class="modal-overlay" id="activity-modal">
+    <div class="modal" style="max-width:680px">
+      <div class="modal-header">
+        <h2 id="modal-title">เพิ่มกิจกรรม</h2>
+        <button class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="activity-form">
+          <input type="hidden" id="edit-id">
+          <div class="form-group">
+            <label class="form-label">ชื่อกิจกรรม <span class="required">*</span></label>
+            <input type="text" class="form-control" id="f-title" required placeholder="ชื่อกิจกรรม">
+          </div>
+          <div class="form-row cols-2">
+            <div class="form-group">
+              <label class="form-label">หมวดหมู่</label>
+              <select class="form-control" id="f-category"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">สถานะ</label>
+              <select class="form-control" id="f-status">
+                <option value="open">เปิดรับสมัคร</option>
+                <option value="closed">ปิดรับสมัคร</option>
+                <option value="cancelled">ยกเลิก</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row cols-3">
+            <div class="form-group">
+              <label class="form-label">วันที่ <span class="required">*</span></label>
+              <input type="date" class="form-control" id="f-date" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">เวลาเริ่ม</label>
+              <input type="time" class="form-control" id="f-start">
+            </div>
+            <div class="form-group">
+              <label class="form-label">เวลาสิ้นสุด</label>
+              <input type="time" class="form-control" id="f-end">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">สถานที่</label>
+            <input type="text" class="form-control" id="f-location" placeholder="ห้อง / อาคาร / สถานที่">
+          </div>
+          <div class="form-row cols-2">
+            <div class="form-group">
+              <label class="form-label">จำนวนที่รับ (0 = ไม่จำกัด)</label>
+              <input type="number" class="form-control" id="f-capacity" min="0" value="0">
+            </div>
+            <div class="form-group">
+              <label class="form-label">ชั่วโมงที่ได้รับ</label>
+              <input type="number" class="form-control" id="f-hours" min="0" step="0.5" value="0">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">รายละเอียด</label>
+            <textarea class="form-control" id="f-desc" rows="3" placeholder="รายละเอียดกิจกรรม..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline modal-close">ยกเลิก</button>
+        <button class="btn btn-primary" onclick="saveActivity()" id="save-btn">บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/shared/app.js"></script>
+  <script>
+    let categories = [];
+    let currentPage = 1;
+
+    async function loadCategories() {
+      categories = await api.get('/api/criteria');
+      const sel = document.getElementById('f-category');
+      const filterSel = document.getElementById('filter-category');
+      const none = '<option value="">-- ไม่ระบุ --</option>';
+      sel.innerHTML = none + categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      filterSel.innerHTML = '<option value="">ทุกหมวดหมู่</option>' + categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    }
+
+    async function loadActivities(page = 1) {
+      currentPage = page;
+      const search = document.getElementById('search').value;
+      const category = document.getElementById('filter-category').value;
+      const status = document.getElementById('filter-status').value;
+      const params = new URLSearchParams({ page, limit: 15 });
+      if (search) params.set('search', search);
+      if (category) params.set('category', category);
+      if (status) params.set('status', status);
+
+      try {
+        const data = await api.get(`/api/activities?${params}`);
+        const wrap = document.getElementById('table-wrap');
+        if (!data.activities.length) {
+          wrap.innerHTML = '<div class="empty-state" style="padding:48px"><div class="empty-icon">📅</div><h3>ไม่พบกิจกรรม</h3></div>';
+        } else {
+          wrap.innerHTML = `<div class="table-wrap"><table>
+            <thead><tr><th>ชื่อกิจกรรม</th><th>วันที่</th><th>หมวดหมู่</th><th>ชั่วโมง</th><th>ผู้สมัคร</th><th>สถานะ</th><th>การดำเนินการ</th></tr></thead>
+            <tbody>${data.activities.map(a => `
+              <tr>
+                <td><span class="font-semibold">${a.title}</span></td>
+                <td>${fmtDate(a.date)}</td>
+                <td>${a.category_name || '-'}</td>
+                <td>${a.hours_credit} ชม.</td>
+                <td>${a.registered_count}${a.capacity > 0 ? '/' + a.capacity : ''}</td>
+                <td>${badgeStatus(a.status)}</td>
+                <td>
+                  <div class="flex gap-2">
+                    <button class="btn btn-outline btn-sm" onclick='openEditModal(${JSON.stringify(a)})'>แก้ไข</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteActivity(${a.id})">ลบ</button>
+                  </div>
+                </td>
+              </tr>`).join('')}
+            </tbody></table></div>`;
+        }
+        renderPagination(document.getElementById('pagination'), data.page, data.pages, loadActivities);
+      } catch { toast('เกิดข้อผิดพลาด', 'error'); }
+    }
+
+    function openCreateModal() {
+      document.getElementById('modal-title').textContent = 'เพิ่มกิจกรรม';
+      document.getElementById('edit-id').value = '';
+      document.getElementById('activity-form').reset();
+      openModal('activity-modal');
+    }
+
+    function openEditModal(a) {
+      document.getElementById('modal-title').textContent = 'แก้ไขกิจกรรม';
+      document.getElementById('edit-id').value = a.id;
+      document.getElementById('f-title').value = a.title || '';
+      document.getElementById('f-category').value = a.category_id || '';
+      document.getElementById('f-status').value = a.status || 'open';
+      document.getElementById('f-date').value = a.date || '';
+      document.getElementById('f-start').value = a.start_time || '';
+      document.getElementById('f-end').value = a.end_time || '';
+      document.getElementById('f-location').value = a.location || '';
+      document.getElementById('f-capacity').value = a.capacity || 0;
+      document.getElementById('f-hours').value = a.hours_credit || 0;
+      document.getElementById('f-desc').value = a.description || '';
+      openModal('activity-modal');
+    }
+
+    async function saveActivity() {
+      const btn = document.getElementById('save-btn');
+      btn.disabled = true;
+      const id = document.getElementById('edit-id').value;
+      const body = {
+        title: document.getElementById('f-title').value,
+        category_id: document.getElementById('f-category').value || null,
+        status: document.getElementById('f-status').value,
+        date: document.getElementById('f-date').value,
+        start_time: document.getElementById('f-start').value,
+        end_time: document.getElementById('f-end').value,
+        location: document.getElementById('f-location').value,
+        capacity: document.getElementById('f-capacity').value,
+        hours_credit: document.getElementById('f-hours').value,
+        description: document.getElementById('f-desc').value,
+      };
+      try {
+        if (id) await api.put(`/api/activities/${id}`, body);
+        else await api.post('/api/activities', body);
+        toast(id ? 'แก้ไขกิจกรรมสำเร็จ' : 'สร้างกิจกรรมสำเร็จ', 'success');
+        closeModal('activity-modal');
+        loadActivities(currentPage);
+      } catch (e) { toast(e.error || 'เกิดข้อผิดพลาด', 'error'); }
+      btn.disabled = false;
+    }
+
+    async function deleteActivity(id) {
+      if (!await confirmDialog('ต้องการลบกิจกรรมนี้หรือไม่?')) return;
+      try {
+        await api.del(`/api/activities/${id}`);
+        toast('ลบกิจกรรมแล้ว', 'success');
+        loadActivities(currentPage);
+      } catch (e) { toast(e.error || 'เกิดข้อผิดพลาด', 'error'); }
+    }
+
+    (async () => {
+      await initLayout({ activePage: '/staff/activities', requireRole: 'staff' });
+      await loadCategories();
+      loadActivities();
+      const doSearch = debounce(() => loadActivities(1));
+      document.getElementById('search').addEventListener('input', doSearch);
+      document.getElementById('filter-category').addEventListener('change', () => loadActivities(1));
+      document.getElementById('filter-status').addEventListener('change', () => loadActivities(1));
+    })();
+  </script>
+</body>
+</html>

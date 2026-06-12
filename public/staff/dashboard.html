@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>แดชบอร์ด (เจ้าหน้าที่) — ระบบกิจกรรมนิสิต TSU</title>
+  <link rel="stylesheet" href="/shared/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-area">
+      <header class="topbar">
+        <span class="topbar-title">แดชบอร์ดเจ้าหน้าที่</span>
+        <div class="topbar-actions">
+          <a href="/staff/activities" class="btn btn-primary btn-sm">+ สร้างกิจกรรม</a>
+        </div>
+      </header>
+      <main class="content">
+        <div class="page-header">
+          <div><h1>แดชบอร์ดเจ้าหน้าที่</h1><p>ภาพรวมระบบจัดการกิจกรรมนิสิต</p></div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-icon blue">📅</div><div class="stat-info"><div class="stat-value" id="s-total">-</div><div class="stat-label">กิจกรรมทั้งหมด</div></div></div>
+          <div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-info"><div class="stat-value" id="s-open">-</div><div class="stat-label">กิจกรรมเปิดรับสมัคร</div></div></div>
+          <div class="stat-card"><div class="stat-icon yellow">📝</div><div class="stat-info"><div class="stat-value" id="s-evidence">-</div><div class="stat-label">หลักฐานรอตรวจ</div></div></div>
+          <div class="stat-card"><div class="stat-icon red">👥</div><div class="stat-info"><div class="stat-value" id="s-students">-</div><div class="stat-label">นิสิตทั้งหมด</div></div></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+          <div class="card">
+            <div class="card-header"><h3>กิจกรรมล่าสุด</h3><a href="/staff/activities" class="btn btn-outline btn-sm">ดูทั้งหมด</a></div>
+            <div class="card-body" id="recent-list">
+              <div class="empty-state" style="padding:32px"><p>กำลังโหลด...</p></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>ลิงก์ด่วน</h3></div>
+            <div class="card-body">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <a href="/staff/evidence" class="btn btn-outline w-full" style="justify-content:flex-start;gap:10px">📁 ตรวจสอบหลักฐาน</a>
+                <a href="/staff/activities" class="btn btn-outline w-full" style="justify-content:flex-start;gap:10px">📅 จัดการกิจกรรม</a>
+                <a href="/staff/reports" class="btn btn-outline w-full" style="justify-content:flex-start;gap:10px">📈 ดูรายงาน</a>
+                <a href="/staff/criteria" class="btn btn-outline w-full" style="justify-content:flex-start;gap:10px">📋 จัดการเกณฑ์</a>
+                <a href="/staff/users" class="btn btn-outline w-full" style="justify-content:flex-start;gap:10px">👥 จัดการผู้ใช้</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="/shared/app.js"></script>
+  <script>
+    (async () => {
+      await initLayout({ activePage: '/staff/dashboard', requireRole: 'staff' });
+      try {
+        const data = await api.get('/api/stats/dashboard');
+        document.getElementById('s-total').textContent = data.totalActivities;
+        document.getElementById('s-open').textContent = data.openActivities;
+        document.getElementById('s-evidence').textContent = data.pendingEvidence;
+        document.getElementById('s-students').textContent = data.totalStudents;
+
+        const el = document.getElementById('recent-list');
+        if (data.recentActivities?.length) {
+          el.innerHTML = data.recentActivities.map(a => `
+            <div class="notif-item">
+              <div class="notif-dot"></div>
+              <div class="notif-content" style="flex:1">
+                <div class="notif-title">${a.title}</div>
+                <div class="notif-msg">${fmtDate(a.date)} · ${a.registered_count} คน</div>
+              </div>
+              ${badgeStatus(a.status)}
+            </div>`).join('');
+        } else {
+          el.innerHTML = '<div class="empty-state" style="padding:24px"><p>ยังไม่มีกิจกรรม</p></div>';
+        }
+      } catch { toast('เกิดข้อผิดพลาดในการโหลด', 'error'); }
+    })();
+  </script>
+</body>
+</html>

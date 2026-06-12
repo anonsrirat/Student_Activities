@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>จัดการเกณฑ์ — ระบบกิจกรรมนิสิต TSU</title>
+  <link rel="stylesheet" href="/shared/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-area">
+      <header class="topbar">
+        <span class="topbar-title">จัดการเกณฑ์กิจกรรม</span>
+      </header>
+      <main class="content">
+        <div class="page-header">
+          <div><h1>จัดการเกณฑ์กิจกรรม</h1><p>กำหนดหมวดหมู่และชั่วโมงขั้นต่ำที่นิสิตต้องผ่าน</p></div>
+          <button class="btn btn-primary" onclick="openCreate()">+ เพิ่มหมวดหมู่</button>
+        </div>
+
+        <div id="criteria-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
+          <div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📋</div><p>กำลังโหลด...</p></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="criteria-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-title">เพิ่มหมวดหมู่</h2>
+        <button class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-id">
+        <div class="form-group">
+          <label class="form-label">ชื่อหมวดหมู่ <span class="required">*</span></label>
+          <input type="text" class="form-control" id="f-name" placeholder="เช่น กิจกรรมบำเพ็ญประโยชน์">
+        </div>
+        <div class="form-group">
+          <label class="form-label">คำอธิบาย</label>
+          <textarea class="form-control" id="f-desc" rows="2" placeholder="อธิบายประเภทกิจกรรมในหมวดหมู่นี้"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">ชั่วโมงขั้นต่ำที่ต้องผ่าน</label>
+          <input type="number" class="form-control" id="f-hours" min="0" step="0.5" value="0">
+          <p class="form-hint">นิสิตต้องสะสมชั่วโมงกิจกรรมในหมวดนี้อย่างน้อยเท่าที่กำหนด</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline modal-close">ยกเลิก</button>
+        <button class="btn btn-primary" onclick="save()">บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/shared/app.js"></script>
+  <script>
+    async function load() {
+      try {
+        const data = await api.get('/api/criteria');
+        const el = document.getElementById('criteria-list');
+        if (!data.length) {
+          el.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📋</div><h3>ยังไม่มีหมวดหมู่</h3><p>เพิ่มหมวดหมู่แรกได้เลย</p></div>';
+          return;
+        }
+        el.innerHTML = data.map(c => `
+          <div class="card">
+            <div class="card-body">
+              <div class="flex justify-between items-center mb-2">
+                <h3 class="font-semibold">${c.name}</h3>
+                <div class="flex gap-2">
+                  <button class="btn btn-outline btn-sm" onclick='openEdit(${JSON.stringify(c)})'>แก้ไข</button>
+                  <button class="btn btn-danger btn-sm" onclick="del(${c.id})">ลบ</button>
+                </div>
+              </div>
+              ${c.description ? `<p class="text-sm text-muted mb-3">${c.description}</p>` : ''}
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-muted">ชั่วโมงขั้นต่ำ:</span>
+                <span class="font-bold" style="color:var(--primary);font-size:1.1rem">${c.min_hours} ชม.</span>
+              </div>
+            </div>
+          </div>`).join('');
+      } catch { toast('เกิดข้อผิดพลาด', 'error'); }
+    }
+
+    function openCreate() {
+      document.getElementById('modal-title').textContent = 'เพิ่มหมวดหมู่';
+      document.getElementById('edit-id').value = '';
+      document.getElementById('f-name').value = '';
+      document.getElementById('f-desc').value = '';
+      document.getElementById('f-hours').value = 0;
+      openModal('criteria-modal');
+    }
+
+    function openEdit(c) {
+      document.getElementById('modal-title').textContent = 'แก้ไขหมวดหมู่';
+      document.getElementById('edit-id').value = c.id;
+      document.getElementById('f-name').value = c.name;
+      document.getElementById('f-desc').value = c.description || '';
+      document.getElementById('f-hours').value = c.min_hours;
+      openModal('criteria-modal');
+    }
+
+    async function save() {
+      const id = document.getElementById('edit-id').value;
+      const body = { name: document.getElementById('f-name').value, description: document.getElementById('f-desc').value, min_hours: document.getElementById('f-hours').value };
+      if (!body.name) { toast('กรุณากรอกชื่อหมวดหมู่', 'error'); return; }
+      try {
+        if (id) await api.put(`/api/criteria/${id}`, body);
+        else await api.post('/api/criteria', body);
+        toast('บันทึกสำเร็จ', 'success');
+        closeModal('criteria-modal');
+        load();
+      } catch (e) { toast(e.error || 'เกิดข้อผิดพลาด', 'error'); }
+    }
+
+    async function del(id) {
+      if (!await confirmDialog('ต้องการลบหมวดหมู่นี้หรือไม่?')) return;
+      try { await api.del(`/api/criteria/${id}`); toast('ลบแล้ว', 'success'); load(); }
+      catch (e) { toast(e.error || 'เกิดข้อผิดพลาด', 'error'); }
+    }
+
+    (async () => {
+      await initLayout({ activePage: '/staff/criteria', requireRole: 'staff' });
+      load();
+    })();
+  </script>
+</body>
+</html>

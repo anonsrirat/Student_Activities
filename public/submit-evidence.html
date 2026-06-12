@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ยื่นหลักฐาน — ระบบกิจกรรมนิสิต TSU</title>
+  <link rel="stylesheet" href="/shared/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-area">
+      <header class="topbar">
+        <span class="topbar-title">ยื่นหลักฐานเข้าร่วมกิจกรรม</span>
+        <div class="topbar-actions">
+          <a href="/my-activities" class="btn btn-outline btn-sm">← กลับ</a>
+          <a href="/notifications" class="notif-btn" id="notif-btn">🔔</a>
+        </div>
+      </header>
+      <main class="content">
+        <div style="max-width:640px">
+          <div class="page-header">
+            <div><h1>ยื่นหลักฐานกิจกรรม</h1><p>อัปโหลดหลักฐานการเข้าร่วมกิจกรรม เช่น ใบเซ็นชื่อ, รูปภาพ, หรือเอกสาร</p></div>
+          </div>
+
+          <!-- Activity Info -->
+          <div class="card mb-4" id="activity-info" style="display:none">
+            <div class="card-body">
+              <div class="text-sm text-muted mb-1">กิจกรรมที่เลือก</div>
+              <div class="font-semibold" id="activity-title">-</div>
+              <div class="text-sm text-muted mt-1" id="activity-meta">-</div>
+            </div>
+          </div>
+
+          <!-- Form -->
+          <div class="card">
+            <div class="card-header"><h3>ข้อมูลหลักฐาน</h3></div>
+            <div class="card-body">
+              <form id="evidence-form" enctype="multipart/form-data">
+                <div class="form-group" id="activity-select-wrap">
+                  <label class="form-label">กิจกรรม <span class="required">*</span></label>
+                  <select class="form-control" id="activity-select" name="activity_id" required>
+                    <option value="">เลือกกิจกรรม...</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">ไฟล์หลักฐาน <span class="required">*</span></label>
+                  <div class="file-drop" id="drop-zone">
+                    <input type="file" id="file-input" name="file" accept=".jpg,.jpeg,.png,.gif,.pdf" required>
+                    <div class="icon">📄</div>
+                    <p>คลิกหรือลากไฟล์มาวางที่นี่</p>
+                    <p class="text-sm" style="margin-top:4px"><strong>JPG, PNG, GIF, PDF</strong> ขนาดไม่เกิน 10MB</p>
+                  </div>
+                  <div id="file-preview-wrap"></div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">คำอธิบายหลักฐาน</label>
+                  <textarea class="form-control" name="description" rows="3" placeholder="อธิบายรายละเอียดหลักฐานที่ยื่น เช่น เข้าร่วมกิจกรรม ณ ห้อง..."></textarea>
+                  <p class="form-hint">ระบุรายละเอียดเพิ่มเติมเพื่อให้เจ้าหน้าที่ตรวจสอบได้ง่ายขึ้น</p>
+                </div>
+
+                <div id="form-error" class="error-banner" style="margin-bottom:12px"></div>
+
+                <!-- Previous submissions -->
+                <div id="prev-submissions" style="display:none">
+                  <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
+                    <h4 class="font-semibold mb-2 text-sm">หลักฐานที่ยื่นก่อนหน้า</h4>
+                    <div id="prev-list"></div>
+                  </div>
+                </div>
+
+                <div class="flex gap-2 justify-between" style="margin-top:16px">
+                  <a href="/my-activities" class="btn btn-outline">ยกเลิก</a>
+                  <button type="submit" class="btn btn-primary" id="submit-btn">ยื่นหลักฐาน</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="/shared/app.js"></script>
+  <script>
+    const presetId = new URLSearchParams(location.search).get('id');
+
+    async function loadMyActivities() {
+      try {
+        const data = await api.get('/api/stats/dashboard');
+        const sel = document.getElementById('activity-select');
+        const regs = data.myRegistrations || [];
+        regs.forEach(r => {
+          const opt = document.createElement('option');
+          opt.value = r.activity_id;
+          opt.textContent = `${r.title} (${fmtDate(r.date)})`;
+          sel.appendChild(opt);
+        });
+        if (presetId) {
+          sel.value = presetId;
+          document.getElementById('activity-select-wrap').style.display = 'none';
+          showActivityInfo(presetId, regs);
+        }
+        sel.addEventListener('change', () => showActivityInfo(sel.value, regs));
+      } catch {}
+    }
+
+    function showActivityInfo(id, regs) {
+      const reg = regs.find(r => r.activity_id == id);
+      if (!reg) return;
+      document.getElementById('activity-info').style.display = 'block';
+      document.getElementById('activity-title').textContent = reg.title;
+      document.getElementById('activity-meta').textContent = `${fmtDate(reg.date)} · ${reg.hours_credit} ชม.`;
+      loadPrevSubmissions(id);
+    }
+
+    async function loadPrevSubmissions(activityId) {
+      try {
+        const all = await api.get('/api/evidence/my');
+        const prev = all.filter(e => e.activity_id == activityId);
+        const el = document.getElementById('prev-submissions');
+        if (prev.length) {
+          el.style.display = 'block';
+          document.getElementById('prev-list').innerHTML = prev.map(e => `
+            <div style="padding:8px;background:var(--bg);border-radius:6px;margin-bottom:8px">
+              <div class="flex justify-between items-center">
+                <span class="text-sm">${fmtDateTime(e.submitted_at)}</span>
+                ${badgeStatus(e.status)}
+              </div>
+              ${e.description ? `<p class="text-sm text-muted mt-1">${e.description}</p>` : ''}
+              ${e.reviewer_note ? `<p class="text-sm" style="color:var(--warning);margin-top:4px">หมายเหตุ: ${e.reviewer_note}</p>` : ''}
+            </div>`).join('');
+        }
+      } catch {}
+    }
+
+    document.getElementById('evidence-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true; btn.textContent = 'กำลังยื่นหลักฐาน...';
+
+      const errEl = document.getElementById('form-error');
+      errEl.style.display = 'none';
+
+      const formData = new FormData(e.target);
+      const actId = formData.get('activity_id') || presetId;
+      if (!actId) { errEl.textContent = 'กรุณาเลือกกิจกรรม'; errEl.style.display = 'block'; btn.disabled = false; btn.textContent = 'ยื่นหลักฐาน'; return; }
+      formData.set('activity_id', actId);
+
+      try {
+        await api.post('/api/evidence', formData, true);
+        toast('ยื่นหลักฐานสำเร็จ! รอเจ้าหน้าที่ตรวจสอบ', 'success');
+        setTimeout(() => window.location.href = '/my-activities', 1500);
+      } catch (err) {
+        errEl.textContent = err.error || 'เกิดข้อผิดพลาด กรุณาลองใหม่';
+        errEl.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'ยื่นหลักฐาน';
+      }
+    });
+
+    (async () => {
+      await initLayout({ activePage: '/my-activities' });
+      initFileDrop(document.getElementById('drop-zone'), document.getElementById('file-input'), document.getElementById('file-preview-wrap'));
+      loadMyActivities();
+    })();
+  </script>
+</body>
+</html>

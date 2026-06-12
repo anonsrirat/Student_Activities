@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>กิจกรรมของฉัน — ระบบกิจกรรมนิสิต TSU</title>
+  <link rel="stylesheet" href="/shared/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-area">
+      <header class="topbar">
+        <span class="topbar-title">กิจกรรมของฉัน</span>
+        <div class="topbar-actions">
+          <a href="/notifications" class="notif-btn" id="notif-btn">🔔</a>
+        </div>
+      </header>
+      <main class="content">
+        <div class="page-header">
+          <div><h1>กิจกรรมของฉัน</h1><p>รายการกิจกรรมที่ลงทะเบียนและสถานะหลักฐาน</p></div>
+          <a href="/activities" class="btn btn-primary">+ ลงทะเบียนเพิ่ม</a>
+        </div>
+
+        <div class="filter-bar">
+          <select id="filter-status" class="form-control">
+            <option value="">ทุกสถานะ</option>
+            <option value="registered">ลงทะเบียนแล้ว</option>
+            <option value="attended">เข้าร่วมแล้ว</option>
+            <option value="absent">ขาด</option>
+          </select>
+        </div>
+
+        <div class="card">
+          <div id="table-wrap">
+            <div class="empty-state" style="padding:48px"><div class="empty-icon">📋</div><p>กำลังโหลด...</p></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="/shared/app.js"></script>
+  <script>
+    let allRegs = [];
+
+    function render(filterStatus = '') {
+      const data = filterStatus ? allRegs.filter(r => r.status === filterStatus) : allRegs;
+      const wrap = document.getElementById('table-wrap');
+      if (!data.length) {
+        wrap.innerHTML = '<div class="empty-state" style="padding:48px"><div class="empty-icon">📋</div><h3>ไม่มีกิจกรรม</h3><p>ยังไม่ได้ลงทะเบียนกิจกรรมใดๆ</p><a href="/activities" class="btn btn-primary mt-3">ดูกิจกรรม</a></div>';
+        return;
+      }
+      wrap.innerHTML = `<div class="table-wrap">
+        <table>
+          <thead><tr><th>กิจกรรม</th><th>วันที่</th><th>หมวดหมู่</th><th>ชั่วโมง</th><th>สถานะการเข้าร่วม</th><th>การดำเนินการ</th></tr></thead>
+          <tbody>
+            ${data.map(r => `
+              <tr>
+                <td><a href="/activity-detail?id=${r.activity_id}" class="font-semibold">${r.title}</a></td>
+                <td>${fmtDate(r.date)}</td>
+                <td>${r.category_name || '-'}</td>
+                <td>${r.hours_credit} ชม.</td>
+                <td>${badgeStatus(r.status)}</td>
+                <td>
+                  <div class="flex gap-2">
+                    <a href="/submit-evidence?id=${r.activity_id}" class="btn btn-outline btn-sm">ยื่นหลักฐาน</a>
+                    ${r.status === 'registered' ? `<button class="btn btn-ghost btn-sm" onclick="cancelReg(${r.activity_id})">ยกเลิก</button>` : ''}
+                  </div>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    }
+
+    async function cancelReg(activityId) {
+      if (!await confirmDialog('ต้องการยกเลิกการลงทะเบียนหรือไม่?')) return;
+      try {
+        await api.del(`/api/activities/${activityId}/register`);
+        toast('ยกเลิกแล้ว', 'success');
+        allRegs = allRegs.filter(r => r.activity_id !== activityId);
+        render(document.getElementById('filter-status').value);
+      } catch (e) { toast(e.error || 'เกิดข้อผิดพลาด', 'error'); }
+    }
+
+    (async () => {
+      await initLayout({ activePage: '/my-activities' });
+      try {
+        const data = await api.get('/api/stats/dashboard');
+        allRegs = data.myRegistrations || [];
+        render();
+        document.getElementById('filter-status').addEventListener('change', e => render(e.target.value));
+      } catch { toast('เกิดข้อผิดพลาดในการโหลด', 'error'); }
+    })();
+  </script>
+</body>
+</html>

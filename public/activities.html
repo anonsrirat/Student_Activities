@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>กิจกรรมทั้งหมด — ระบบกิจกรรมนิสิต TSU</title>
+  <link rel="stylesheet" href="/shared/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-area">
+      <header class="topbar">
+        <span class="topbar-title">กิจกรรมทั้งหมด</span>
+        <div class="topbar-actions">
+          <a href="/notifications" class="notif-btn" id="notif-btn">🔔</a>
+        </div>
+      </header>
+      <main class="content">
+        <div class="page-header">
+          <div><h1>กิจกรรมทั้งหมด</h1><p>ค้นหาและลงทะเบียนกิจกรรมที่สนใจ</p></div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <input type="text" id="search" class="form-control search-input" placeholder="🔍 ค้นหากิจกรรม...">
+          <select id="filter-category" class="form-control">
+            <option value="">ทุกหมวดหมู่</option>
+          </select>
+          <select id="filter-status" class="form-control">
+            <option value="">ทุกสถานะ</option>
+            <option value="open">เปิดรับสมัคร</option>
+            <option value="closed">ปิดรับสมัคร</option>
+            <option value="cancelled">ยกเลิก</option>
+          </select>
+          <input type="date" id="filter-date" class="form-control" title="กรองตามวันที่">
+          <button class="btn btn-outline btn-sm" onclick="clearFilters()">ล้างตัวกรอง</button>
+        </div>
+
+        <div id="activities-grid" class="activity-grid">
+          <div style="grid-column:1/-1" class="empty-state"><div class="empty-icon">📅</div><p>กำลังโหลดกิจกรรม...</p></div>
+        </div>
+
+        <div class="pagination" id="pagination"></div>
+      </main>
+    </div>
+  </div>
+
+  <script src="/shared/app.js"></script>
+  <script>
+    let currentPage = 1;
+    let categories = [];
+
+    async function loadCategories() {
+      try {
+        categories = await api.get('/api/criteria');
+        const sel = document.getElementById('filter-category');
+        categories.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.id; opt.textContent = c.name;
+          sel.appendChild(opt);
+        });
+      } catch {}
+    }
+
+    async function loadActivities(page = 1) {
+      currentPage = page;
+      const search = document.getElementById('search').value;
+      const category = document.getElementById('filter-category').value;
+      const status = document.getElementById('filter-status').value;
+      const date = document.getElementById('filter-date').value;
+
+      const params = new URLSearchParams({ page, limit: 9 });
+      if (search) params.set('search', search);
+      if (category) params.set('category', category);
+      if (status) params.set('status', status);
+      if (date) params.set('date', date);
+
+      const grid = document.getElementById('activities-grid');
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">กำลังโหลด...</div>';
+
+      try {
+        const data = await api.get(`/api/activities?${params}`);
+        if (!data.activities.length) {
+          grid.innerHTML = '<div style="grid-column:1/-1" class="empty-state"><div class="empty-icon">🔍</div><h3>ไม่พบกิจกรรม</h3><p>ลองเปลี่ยนคำค้นหาหรือตัวกรอง</p></div>';
+        } else {
+          grid.innerHTML = data.activities.map(a => renderActivityCard(a)).join('');
+        }
+
+        const pagEl = document.getElementById('pagination');
+        renderPagination(pagEl, data.page, data.pages, loadActivities);
+      } catch {
+        grid.innerHTML = '<div style="grid-column:1/-1" class="empty-state"><div class="empty-icon">⚠</div><p>เกิดข้อผิดพลาดในการโหลดข้อมูล</p></div>';
+      }
+    }
+
+    function renderActivityCard(a) {
+      const full = a.capacity > 0 && a.registered_count >= a.capacity;
+      const canRegister = a.status === 'open' && !a.is_registered && !full;
+      return `
+        <div class="activity-card">
+          <div class="activity-card-header">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+              <h3 class="truncate">${a.title}</h3>
+              ${badgeStatus(a.status)}
+            </div>
+            ${a.category_name ? `<span class="badge badge-student" style="margin-top:6px">${a.category_name}</span>` : ''}
+          </div>
+          <div class="activity-card-body">
+            <div class="activity-card-meta">
+              <div class="activity-meta-row">📅 <span>${fmtDate(a.date)}${a.start_time ? ' ' + a.start_time : ''}${a.end_time ? ' – ' + a.end_time : ''}</span></div>
+              ${a.location ? `<div class="activity-meta-row">📍 <span>${a.location}</span></div>` : ''}
+              <div class="activity-meta-row">⏱ <span>${a.hours_credit} ชั่วโมง</span></div>
+              <div class="activity-meta-row">👥 <span>${a.registered_count}${a.capacity > 0 ? ' / ' + a.capacity : ''} คน${full ? ' (เต็ม)' : ''}</span></div>
+            </div>
+          </div>
+          <div class="activity-card-footer">
+            <a href="/activity-detail?id=${a.id}" class="btn btn-outline btn-sm">รายละเอียด</a>
+            ${a.is_registered
+              ? `<span class="badge badge-registered">ลงทะเบียนแล้ว</span>`
+              : canRegister
+                ? `<button class="btn btn-primary btn-sm" onclick="register(${a.id}, this)">ลงทะเบียน</button>`
+                : full ? `<span class="text-sm text-muted">เต็มแล้ว</span>` : ''}
+          </div>
+        </div>`;
+    }
+
+    async function register(id, btn) {
+      btn.disabled = true; btn.textContent = 'กำลังลงทะเบียน...';
+      try {
+        await api.post(`/api/activities/${id}/register`, {});
+        toast('ลงทะเบียนสำเร็จ!', 'success');
+        loadActivities(currentPage);
+      } catch (e) {
+        toast(e.error || 'เกิดข้อผิดพลาด', 'error');
+        btn.disabled = false; btn.textContent = 'ลงทะเบียน';
+      }
+    }
+
+    function clearFilters() {
+      document.getElementById('search').value = '';
+      document.getElementById('filter-category').value = '';
+      document.getElementById('filter-status').value = '';
+      document.getElementById('filter-date').value = '';
+      loadActivities(1);
+    }
+
+    (async () => {
+      await initLayout({ activePage: '/activities' });
+      await loadCategories();
+      loadActivities();
+
+      const doSearch = debounce(() => loadActivities(1));
+      document.getElementById('search').addEventListener('input', doSearch);
+      document.getElementById('filter-category').addEventListener('change', () => loadActivities(1));
+      document.getElementById('filter-status').addEventListener('change', () => loadActivities(1));
+      document.getElementById('filter-date').addEventListener('change', () => loadActivities(1));
+    })();
+  </script>
+</body>
+</html>

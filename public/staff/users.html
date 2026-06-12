@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>จัดการผู้ใช้ — ระบบกิจกรรมนิสิต TSU</title>
+  <link rel="stylesheet" href="/shared/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-area">
+      <header class="topbar">
+        <span class="topbar-title">จัดการผู้ใช้</span>
+      </header>
+      <main class="content">
+        <div class="page-header">
+          <div><h1>จัดการผู้ใช้</h1><p>ดูรายชื่อนิสิตและเจ้าหน้าที่ทั้งหมด</p></div>
+        </div>
+
+        <div class="filter-bar">
+          <input type="text" id="search" class="form-control search-input" placeholder="🔍 ค้นหาชื่อ/อีเมล/รหัสนิสิต...">
+          <select id="filter-role" class="form-control">
+            <option value="">ทุก Role</option>
+            <option value="student">นิสิต</option>
+            <option value="staff">เจ้าหน้าที่</option>
+          </select>
+        </div>
+
+        <div class="card">
+          <div id="table-wrap">
+            <div class="empty-state" style="padding:48px"><div class="empty-icon">👥</div><p>กำลังโหลด...</p></div>
+          </div>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </main>
+    </div>
+  </div>
+
+  <script src="/shared/app.js"></script>
+  <script>
+    let currentPage = 1;
+
+    async function loadUsers(page = 1) {
+      currentPage = page;
+      const search = document.getElementById('search').value;
+      const role = document.getElementById('filter-role').value;
+      const params = new URLSearchParams({ page, limit: 20 });
+      if (search) params.set('search', search);
+      if (role) params.set('role', role);
+
+      try {
+        const data = await api.get(`/api/users?${params}`);
+        const wrap = document.getElementById('table-wrap');
+        if (!data.users.length) {
+          wrap.innerHTML = '<div class="empty-state" style="padding:48px"><div class="empty-icon">👥</div><h3>ไม่พบผู้ใช้</h3></div>';
+        } else {
+          wrap.innerHTML = `<div class="table-wrap"><table>
+            <thead><tr><th>ชื่อ</th><th>อีเมล</th><th>รหัสนิสิต</th><th>Role</th><th>เข้าร่วมเมื่อ</th><th>เปลี่ยน Role</th></tr></thead>
+            <tbody>${data.users.map(u => `
+              <tr>
+                <td>
+                  <div class="flex items-center gap-2">
+                    ${u.avatar_url ? `<img src="${u.avatar_url}" style="width:30px;height:30px;border-radius:50%;object-fit:cover">` : `<div style="width:30px;height:30px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.7rem;font-weight:700">${u.name?.slice(0,2) || 'U'}</div>`}
+                    <span class="font-semibold">${u.name}</span>
+                  </div>
+                </td>
+                <td class="text-sm">${u.email}</td>
+                <td>${u.student_id || '-'}</td>
+                <td>${badgeStatus(u.role)}</td>
+                <td class="text-sm text-muted">${fmtDate(u.created_at)}</td>
+                <td>
+                  <select class="form-control" style="width:auto;padding:4px 8px;font-size:.8rem" onchange="changeRole(${u.id}, this.value)" data-current="${u.role}">
+                    <option value="student"${u.role==='student'?' selected':''}>นิสิต</option>
+                    <option value="staff"${u.role==='staff'?' selected':''}>เจ้าหน้าที่</option>
+                  </select>
+                </td>
+              </tr>`).join('')}
+            </tbody></table></div>`;
+        }
+        renderPagination(document.getElementById('pagination'), data.page, data.pages, loadUsers);
+      } catch { toast('เกิดข้อผิดพลาด', 'error'); }
+    }
+
+    async function changeRole(id, newRole) {
+      try {
+        await api.put(`/api/users/${id}/role`, { role: newRole });
+        toast(`เปลี่ยน role เป็น "${newRole === 'staff' ? 'เจ้าหน้าที่' : 'นิสิต'}" สำเร็จ`, 'success');
+      } catch (e) { toast(e.error || 'เกิดข้อผิดพลาด', 'error'); loadUsers(currentPage); }
+    }
+
+    (async () => {
+      await initLayout({ activePage: '/staff/users', requireRole: 'staff' });
+      loadUsers();
+      const doSearch = debounce(() => loadUsers(1));
+      document.getElementById('search').addEventListener('input', doSearch);
+      document.getElementById('filter-role').addEventListener('change', () => loadUsers(1));
+    })();
+  </script>
+</body>
+</html>

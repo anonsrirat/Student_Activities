@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>รายงาน — ระบบกิจกรรมนิสิต TSU</title>
+  <link rel="stylesheet" href="/shared/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-area">
+      <header class="topbar">
+        <span class="topbar-title">รายงาน</span>
+      </header>
+      <main class="content">
+        <div class="page-header">
+          <div><h1>รายงานกิจกรรมนิสิต</h1><p>สรุปชั่วโมงกิจกรรมและ Export ข้อมูล</p></div>
+          <div class="flex gap-2">
+            <select id="export-category" class="form-control" style="width:auto">
+              <option value="">ทุกหมวดหมู่</option>
+            </select>
+            <a id="export-btn" href="/api/reports/students" class="btn btn-success" download>⬇ Export CSV</a>
+          </div>
+        </div>
+
+        <!-- Summary Table -->
+        <div class="card mb-4">
+          <div class="card-header"><h3>สรุปรายนิสิต</h3></div>
+          <div id="summary-wrap">
+            <div class="empty-state" style="padding:48px"><div class="empty-icon">📈</div><p>กำลังโหลด...</p></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="/shared/app.js"></script>
+  <script>
+    async function loadCategories() {
+      try {
+        const cats = await api.get('/api/criteria');
+        const sel = document.getElementById('export-category');
+        cats.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.id; opt.textContent = c.name;
+          sel.appendChild(opt);
+        });
+        sel.addEventListener('change', updateExportLink);
+      } catch {}
+    }
+
+    function updateExportLink() {
+      const cat = document.getElementById('export-category').value;
+      const url = cat ? `/api/reports/students?category=${cat}` : '/api/reports/students';
+      document.getElementById('export-btn').href = url;
+    }
+
+    async function loadSummary() {
+      try {
+        const data = await api.get('/api/reports/summary');
+        const wrap = document.getElementById('summary-wrap');
+        if (!data.length) {
+          wrap.innerHTML = '<div class="empty-state" style="padding:32px"><h3>ยังไม่มีนิสิตในระบบ</h3></div>';
+          return;
+        }
+        wrap.innerHTML = `<div class="table-wrap"><table>
+          <thead><tr><th>รหัสนิสิต</th><th>ชื่อ-นามสกุล</th><th>อีเมล</th><th>กิจกรรมที่เข้าร่วม</th><th>ชั่วโมงสะสม</th><th>รอยืนยัน</th></tr></thead>
+          <tbody>${data.map(s => `
+            <tr>
+              <td>${s.student_id || '-'}</td>
+              <td class="font-semibold">${s.name}</td>
+              <td class="text-sm">${s.email}</td>
+              <td style="text-align:center">${s.total_activities}</td>
+              <td style="text-align:center"><span class="font-semibold">${(s.total_hours || 0).toFixed(1)}</span> ชม.</td>
+              <td style="text-align:center">${s.pending_activities > 0 ? `<span class="badge badge-pending">${s.pending_activities}</span>` : '-'}</td>
+            </tr>`).join('')}
+          </tbody></table></div>`;
+      } catch { toast('เกิดข้อผิดพลาดในการโหลด', 'error'); }
+    }
+
+    (async () => {
+      await initLayout({ activePage: '/staff/reports', requireRole: 'staff' });
+      loadCategories();
+      loadSummary();
+    })();
+  </script>
+</body>
+</html>

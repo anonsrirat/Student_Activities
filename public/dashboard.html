@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>แดชบอร์ด — ระบบกิจกรรมนิสิต TSU</title>
+  <link rel="stylesheet" href="/shared/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-area">
+      <header class="topbar">
+        <span class="topbar-title">แดชบอร์ด</span>
+        <div class="topbar-actions">
+          <a href="/notifications" class="notif-btn" id="notif-btn" title="การแจ้งเตือน">🔔</a>
+        </div>
+      </header>
+      <main class="content">
+        <div class="page-header">
+          <div>
+            <h1 id="greeting">สวัสดี!</h1>
+            <p>ภาพรวมกิจกรรมและความคืบหน้าของคุณ</p>
+          </div>
+          <a href="/activities" class="btn btn-primary">+ สมัครกิจกรรมใหม่</a>
+        </div>
+
+        <!-- Stat Cards -->
+        <div class="stats-grid" id="stats-grid">
+          <div class="stat-card"><div class="stat-icon blue">📅</div><div class="stat-info"><div class="stat-value" id="stat-attended">-</div><div class="stat-label">กิจกรรมที่เข้าร่วม</div></div></div>
+          <div class="stat-card"><div class="stat-icon green">⏱</div><div class="stat-info"><div class="stat-value" id="stat-hours">-</div><div class="stat-label">ชั่วโมงสะสม</div></div></div>
+          <div class="stat-card"><div class="stat-icon yellow">📝</div><div class="stat-info"><div class="stat-value" id="stat-pending">-</div><div class="stat-label">รอการยืนยัน</div></div></div>
+          <div class="stat-card"><div class="stat-icon red">🎯</div><div class="stat-info"><div class="stat-value" id="stat-criteria">-</div><div class="stat-label">เกณฑ์ที่ผ่านแล้ว</div></div></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;" id="main-grid">
+          <!-- Criteria Progress -->
+          <div class="card">
+            <div class="card-header"><h3>ความคืบหน้าตามเกณฑ์</h3><a href="/criteria" class="btn btn-outline btn-sm">ดูทั้งหมด</a></div>
+            <div class="card-body" id="criteria-list">
+              <div class="empty-state"><div class="empty-icon">📊</div><p>กำลังโหลด...</p></div>
+            </div>
+          </div>
+
+          <!-- Upcoming Activities -->
+          <div class="card">
+            <div class="card-header"><h3>กิจกรรมที่จะมาถึง</h3><a href="/activities" class="btn btn-outline btn-sm">ดูทั้งหมด</a></div>
+            <div class="card-body" id="upcoming-list">
+              <div class="empty-state"><div class="empty-icon">📅</div><p>กำลังโหลด...</p></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- My Recent Activities -->
+        <div class="card">
+          <div class="card-header"><h3>กิจกรรมล่าสุดของฉัน</h3><a href="/my-activities" class="btn btn-outline btn-sm">ดูทั้งหมด</a></div>
+          <div id="my-activities-wrap">
+            <div class="empty-state"><div class="empty-icon">📋</div><p>กำลังโหลด...</p></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="/shared/app.js"></script>
+  <script>
+    (async () => {
+      const user = await initLayout({ activePage: '/dashboard' });
+      if (!user) return;
+
+      document.getElementById('greeting').textContent = `สวัสดี, ${user.name.split(' ')[0]}! 👋`;
+
+      try {
+        const data = await api.get('/api/stats/dashboard');
+
+        document.getElementById('stat-attended').textContent = data.attendedCount;
+        document.getElementById('stat-hours').textContent = data.totalHours.toFixed(1) + ' ชม.';
+        document.getElementById('stat-pending').textContent = data.pendingCount;
+        const passed = data.categoryProgress.filter(c => c.passed).length;
+        document.getElementById('stat-criteria').textContent = `${passed}/${data.categoryProgress.length}`;
+
+        // Criteria progress
+        const criteriaEl = document.getElementById('criteria-list');
+        if (data.categoryProgress.length) {
+          criteriaEl.innerHTML = data.categoryProgress.map(cat => {
+            const pct = cat.min_hours > 0 ? Math.min(100, (cat.earned_hours / cat.min_hours) * 100) : 100;
+            const barClass = pct >= 100 ? 'done' : pct > 0 ? 'partial' : 'none';
+            return `
+              <div class="criteria-card mb-3">
+                <div class="criteria-header">
+                  <span class="cat-name">${cat.name}</span>
+                  <span class="criteria-hours">${cat.earned_hours.toFixed(1)} / ${cat.min_hours} ชม.</span>
+                </div>
+                <div class="criteria-bar">
+                  <div class="progress"><div class="progress-bar ${barClass}" style="width:${pct}%"></div></div>
+                </div>
+                <span class="criteria-status ${cat.passed ? 'pass' : 'fail'}">${cat.passed ? '✓ ผ่านเกณฑ์' : '✗ ยังไม่ผ่าน'}</span>
+              </div>`;
+          }).join('');
+        } else {
+          criteriaEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><p>ไม่มีข้อมูลเกณฑ์</p></div>';
+        }
+
+        // Upcoming
+        const upEl = document.getElementById('upcoming-list');
+        if (data.upcomingActivities.length) {
+          upEl.innerHTML = data.upcomingActivities.map(a => `
+            <a href="/activity-detail?id=${a.id}" style="text-decoration:none;color:inherit">
+              <div class="notif-item" style="cursor:pointer">
+                <div class="notif-dot"></div>
+                <div class="notif-content">
+                  <div class="notif-title">${a.title}</div>
+                  <div class="notif-msg">${fmtDate(a.date)} ${a.start_time ? '· ' + a.start_time : ''} ${a.location ? '· ' + a.location : ''}</div>
+                  <div class="notif-time">${a.hours_credit} ชม. · ${a.category_name || '-'}</div>
+                </div>
+              </div>
+            </a>`).join('');
+        } else {
+          upEl.innerHTML = '<div class="empty-state" style="padding:24px"><p>ไม่มีกิจกรรมที่จะมาถึง</p></div>';
+        }
+
+        // My recent activities
+        const myEl = document.getElementById('my-activities-wrap');
+        const recent = data.myRegistrations.slice(0, 5);
+        if (recent.length) {
+          myEl.innerHTML = `<div class="table-wrap">
+            <table>
+              <thead><tr><th>กิจกรรม</th><th>วันที่</th><th>หมวดหมู่</th><th>ชั่วโมง</th><th>สถานะ</th></tr></thead>
+              <tbody>
+                ${recent.map(r => `
+                  <tr>
+                    <td><a href="/activity-detail?id=${r.activity_id}">${r.title}</a></td>
+                    <td>${fmtDate(r.date)}</td>
+                    <td>${r.category_name || '-'}</td>
+                    <td>${r.hours_credit} ชม.</td>
+                    <td>${badgeStatus(r.status)}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>`;
+        } else {
+          myEl.innerHTML = '<div class="empty-state" style="padding:32px"><div class="empty-icon">📋</div><h3>ยังไม่ได้ลงทะเบียนกิจกรรม</h3><p>ไปดูกิจกรรมที่เปิดรับสมัครได้เลย</p><a href="/activities" class="btn btn-primary mt-3">ดูกิจกรรม</a></div>';
+        }
+      } catch (e) {
+        toast('เกิดข้อผิดพลาดในการโหลดข้อมูล', 'error');
+      }
+    })();
+  </script>
+</body>
+</html>

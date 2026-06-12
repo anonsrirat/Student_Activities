@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ตรวจหลักฐาน — ระบบกิจกรรมนิสิต TSU</title>
+  <link rel="stylesheet" href="/shared/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-area">
+      <header class="topbar">
+        <span class="topbar-title">ตรวจสอบหลักฐาน</span>
+      </header>
+      <main class="content">
+        <div class="page-header">
+          <div><h1>ตรวจสอบหลักฐาน</h1><p>อนุมัติหรือปฏิเสธหลักฐานการเข้าร่วมกิจกรรมของนิสิต</p></div>
+        </div>
+
+        <div class="filter-bar">
+          <select id="filter-status" class="form-control">
+            <option value="pending">รอตรวจสอบ</option>
+            <option value="">ทั้งหมด</option>
+            <option value="approved">อนุมัติแล้ว</option>
+            <option value="rejected">ปฏิเสธแล้ว</option>
+          </select>
+        </div>
+
+        <div class="card">
+          <div id="table-wrap">
+            <div class="empty-state" style="padding:48px"><div class="empty-icon">📁</div><p>กำลังโหลด...</p></div>
+          </div>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Review Modal -->
+  <div class="modal-overlay" id="review-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>ตรวจสอบหลักฐาน</h2>
+        <button class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="review-info" style="background:var(--bg);border-radius:8px;padding:14px;margin-bottom:16px"></div>
+        <div class="form-group">
+          <label class="form-label">หมายเหตุ (ถ้ามี)</label>
+          <textarea class="form-control" id="review-note" rows="3" placeholder="ระบุเหตุผลหรือหมายเหตุ..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline modal-close">ยกเลิก</button>
+        <button class="btn btn-danger" onclick="doReview('rejected')">ปฏิเสธ</button>
+        <button class="btn btn-success" onclick="doReview('approved')">อนุมัติ</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/shared/app.js"></script>
+  <script>
+    let currentPage = 1;
+    let reviewingId = null;
+
+    async function loadEvidence(page = 1) {
+      currentPage = page;
+      const status = document.getElementById('filter-status').value;
+      const params = new URLSearchParams({ page, limit: 15 });
+      if (status) params.set('status', status);
+
+      try {
+        const data = await api.get(`/api/evidence?${params}`);
+        const wrap = document.getElementById('table-wrap');
+        if (!data.evidence.length) {
+          wrap.innerHTML = '<div class="empty-state" style="padding:48px"><div class="empty-icon">📁</div><h3>ไม่มีหลักฐานในขณะนี้</h3></div>';
+        } else {
+          wrap.innerHTML = `<div class="table-wrap"><table>
+            <thead><tr><th>นิสิต</th><th>กิจกรรม</th><th>วันที่ยื่น</th><th>ไฟล์</th><th>คำอธิบาย</th><th>สถานะ</th><th>การดำเนินการ</th></tr></thead>
+            <tbody>${data.evidence.map(e => `
+              <tr>
+                <td>
+                  <div class="font-semibold">${e.student_name}</div>
+                  <div class="text-sm text-muted">${e.student_email}</div>
+                </td>
+                <td>
+                  <div>${e.activity_title}</div>
+                  <div class="text-sm text-muted">${fmtDate(e.activity_date)}</div>
+                </td>
+                <td>${fmtDate(e.submitted_at)}</td>
+                <td>${e.file_path ? `<a href="${e.file_path}" target="_blank" class="btn btn-outline btn-sm">ดูไฟล์</a>` : '-'}</td>
+                <td><span class="text-sm">${e.description || '-'}</span></td>
+                <td>${badgeStatus(e.status)}</td>
+                <td>
+                  ${e.status === 'pending'
+                    ? `<button class="btn btn-primary btn-sm" onclick="openReview(${e.id}, '${e.student_name}', '${e.activity_title}')">ตรวจสอบ</button>`
+                    : `<span class="text-sm text-muted">โดย ${e.reviewer_name || '-'}</span>`}
+                </td>
+              </tr>`).join('')}
+            </tbody></table></div>`;
+        }
+        renderPagination(document.getElementById('pagination'), data.page, data.pages, loadEvidence);
+      } catch { toast('เกิดข้อผิดพลาด', 'error'); }
+    }
+
+    function openReview(id, studentName, activityTitle) {
+      reviewingId = id;
+      document.getElementById('review-note').value = '';
+      document.getElementById('review-info').innerHTML = `
+        <div class="text-sm text-muted mb-1">นิสิต</div>
+        <div class="font-semibold mb-2">${studentName}</div>
+        <div class="text-sm text-muted mb-1">กิจกรรม</div>
+        <div class="font-semibold">${activityTitle}</div>`;
+      openModal('review-modal');
+    }
+
+    async function doReview(status) {
+      if (!reviewingId) return;
+      const note = document.getElementById('review-note').value;
+      try {
+        await api.put(`/api/evidence/${reviewingId}/review`, { status, reviewer_note: note });
+        toast(status === 'approved' ? 'อนุมัติหลักฐานแล้ว' : 'ปฏิเสธหลักฐานแล้ว', 'success');
+        closeModal('review-modal');
+        loadEvidence(currentPage);
+      } catch (e) { toast(e.error || 'เกิดข้อผิดพลาด', 'error'); }
+    }
+
+    (async () => {
+      await initLayout({ activePage: '/staff/evidence', requireRole: 'staff' });
+      loadEvidence();
+      document.getElementById('filter-status').addEventListener('change', () => loadEvidence(1));
+    })();
+  </script>
+</body>
+</html>
