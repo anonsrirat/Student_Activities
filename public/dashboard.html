@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>แดชบอร์ด — ระบบกิจกรรมนิสิต TSU</title>
-  <link rel="stylesheet" href="/shared/style.css?v=20260612-4">
+  <link rel="stylesheet" href="/shared/style.css?v=20260612-5">
 </head>
 <body>
   <div class="layout">
@@ -69,9 +69,9 @@
     </div>
   </div>
 
-  <script src="/shared/icons.js?v=20260612-4"></script>
-  <script src="/shared/datepicker.js?v=20260612-4"></script>
-  <script src="/shared/app.js?v=20260612-4"></script>
+  <script src="/shared/icons.js?v=20260612-5"></script>
+  <script src="/shared/datepicker.js?v=20260612-5"></script>
+  <script src="/shared/app.js?v=20260612-5"></script>
   <script>
     function renderNextStep(data, remainingHours, passed, totalCriteria) {
       const box = document.getElementById('next-step');
@@ -93,7 +93,7 @@
       } else if (data.upcomingActivities.length) {
         iconName = 'calendar';
         title = 'มีกิจกรรมที่สมัครได้เร็ว ๆ นี้';
-        msg = `ยังขาดประมาณ ${Math.max(0, remainingHours).toFixed(1)} ชั่วโมง เลือกกิจกรรมจากรายการแนะนำด้านขวาได้เลย`;
+        msg = `ยังขาดประมาณ ${formatHourNumber(remainingHours)} ชั่วโมง เลือกกิจกรรมจากรายการแนะนำด้านขวาได้เลย`;
       }
 
       box.innerHTML = `
@@ -120,7 +120,7 @@
         const data = await api.get('/api/stats/dashboard');
 
         document.getElementById('stat-attended').textContent = data.attendedCount;
-        document.getElementById('stat-hours').textContent = data.totalHours.toFixed(1) + ' ชม.';
+        document.getElementById('stat-hours').textContent = formatHours(data.totalHours);
         document.getElementById('stat-pending').textContent = data.pendingCount;
         const passed = data.categoryProgress.filter(c => c.passed).length;
         document.getElementById('stat-criteria').textContent = `${passed}/${data.categoryProgress.length}`;
@@ -128,7 +128,7 @@
         const totalEarnedForCriteria = data.categoryProgress.reduce((sum, c) => sum + Math.min(Number(c.earned_hours || 0), Number(c.min_hours || 0)), 0);
         const remainingHours = Math.max(0, totalRequired - totalEarnedForCriteria);
         document.getElementById('hero-summary').textContent = remainingHours > 0
-          ? `คุณยังต้องเก็บอีกประมาณ ${remainingHours.toFixed(1)} ชั่วโมง เพื่อให้ครบทุกหมวดกิจกรรม`
+          ? `คุณยังต้องเก็บอีกประมาณ ${formatHourNumber(remainingHours)} ชั่วโมง เพื่อให้ครบทุกหมวดกิจกรรม`
           : 'คุณเก็บชั่วโมงครบตามเกณฑ์รวมแล้ว ตรวจสอบแต่ละหมวดด้านล่างได้เลย';
         renderNextStep(data, remainingHours, passed, data.categoryProgress.length);
 
@@ -143,12 +143,12 @@
               <div class="criteria-card criteria-card-${categoryThemeKey(cat)} mb-3">
                 <div class="criteria-header">
                   ${categoryBadge(cat)}
-                  <span class="criteria-hours">${cat.earned_hours.toFixed(1)} / ${cat.min_hours} ชม.</span>
+                  <span class="criteria-hours">${formatHourNumber(cat.earned_hours)} / ${formatHourNumber(cat.min_hours)} ชม.</span>
                 </div>
                 <div class="criteria-bar">
                   <div class="progress"><div class="progress-bar ${barClass}" style="width:${pct}%"></div></div>
                 </div>
-                <span class="criteria-status ${cat.passed ? 'pass' : 'fail'}">${cat.passed ? icon('check', { size: 14 }) + ' ครบหมวดนี้แล้ว' : `ยังขาด ${remaining.toFixed(1)} ชม.`}</span>
+                <span class="criteria-status ${cat.passed ? 'pass' : 'fail'}">${cat.passed ? icon('check', { size: 14 }) + ' ครบหมวดนี้แล้ว' : `ยังขาด ${formatHours(remaining)}`}</span>
               </div>`;
           }).join('');
         } else {
@@ -163,7 +163,7 @@
               <div>
                 <div class="upcoming-title">${a.title}</div>
                 <div class="upcoming-meta">${activityScheduleLabel(a)}</div>
-                <div class="upcoming-meta">${a.location || 'ยังไม่ระบุสถานที่'} · ${a.hours_credit} ชม.</div>
+                <div class="upcoming-meta">${a.location || 'ยังไม่ระบุสถานที่'} · ${formatHours(a.hours_credit)}</div>
               </div>
               ${categoryBadge(a)}
             </a>`).join('');
@@ -184,7 +184,7 @@
                     <td><a href="/activity-detail?id=${r.activity_id}">${r.title}</a></td>
                     <td>${activityDateLabel(r)}</td>
                     <td>${categoryBadge(r) || '-'}</td>
-                    <td>${r.hours_credit} ชม.</td>
+                    <td>${formatHours(r.hours_credit)}</td>
                     <td>${badgeStatus(r.status)}</td>
                   </tr>`).join('')}
               </tbody>

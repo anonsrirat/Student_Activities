@@ -69,6 +69,14 @@ function timeAgo(d) {
   return fmtDate(d);
 }
 
+function formatHourNumber(value) {
+  return Math.round(Number(value || 0)).toLocaleString('th-TH', { maximumFractionDigits: 0 });
+}
+
+function formatHours(value) {
+  return `${formatHourNumber(value)} ชม.`;
+}
+
 function escapeHtml(v) {
   return String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 }
@@ -137,13 +145,26 @@ function parseLocalDateTime(value) {
 }
 
 function registrationState(activity) {
-  if (activity?.status !== 'open') return { ok: false, label: 'ปิดรับสมัคร' };
+  const status = activity?.status || activity?.activity_status;
+  if (status !== 'open') return { ok: false, label: 'ปิดรับสมัคร' };
+  if (Number(activity?.registration_not_started)) return { ok: false, label: 'ยังไม่เปิดรับสมัคร' };
+  if (Number(activity?.registration_ended)) return { ok: false, label: 'หมดเวลารับสมัคร' };
   const now = new Date();
   const start = parseLocalDateTime(activity.registration_start_at);
   const end = parseLocalDateTime(activity.registration_end_at);
   if (start && now < start) return { ok: false, label: 'ยังไม่เปิดรับสมัคร' };
   if (end && now > end) return { ok: false, label: 'หมดเวลารับสมัคร' };
   return { ok: true, label: 'สมัครได้' };
+}
+
+function activityStatusBadge(activity) {
+  const state = registrationState(activity);
+  const status = activity?.status || activity?.activity_status;
+  if (status === 'open' && !state.ok) {
+    const cls = Number(activity?.registration_not_started) || state.label === 'ยังไม่เปิดรับสมัคร' ? 'badge-pending' : 'badge-closed';
+    return `<span class="badge ${cls}">${state.label}</span>`;
+  }
+  return badgeStatus(status);
 }
 
 function badgeStatus(status) {
@@ -265,7 +286,7 @@ function renderSidebar(user) {
           <div class="user-name">${user.name}</div>
           <div class="user-role">${user.role === 'staff' ? 'เจ้าหน้าที่' : 'นิสิต'}</div>
         </div>
-        <button onclick="logout()" class="btn btn-ghost btn-sm" title="ออกจากระบบ">${icon('logout', { size: 16 })}</button>
+        <button onclick="logout()" class="btn btn-danger btn-sm logout-btn" title="ออกจากระบบ">${icon('logout', { size: 16 })}<span>ออก</span></button>
       </div>
     </div>`;
 
@@ -378,6 +399,11 @@ async function toggleNotificationBox(btn) {
 }
 
 async function logout() {
+  if (!await confirmDialog('ต้องการออกจากระบบหรือไม่?', {
+    title: 'ยืนยันการออกจากระบบ',
+    confirmText: 'ออกจากระบบ',
+    tone: 'danger'
+  })) return;
   clearCachedUser();
   try { await api.post('/api/auth/logout', {}); } catch {}
   window.location.href = '/login';
@@ -397,10 +423,43 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ===== Confirm Dialog =====
-function confirmDialog(msg) {
+function confirmDialog(msg, opts = {}) {
+  const {
+    title = 'ยืนยันการทำรายการ',
+    confirmText = 'ยืนยัน',
+    cancelText = 'ยกเลิก',
+    tone = 'primary'
+  } = opts;
+
   return new Promise(resolve => {
-    if (window.confirm(msg)) resolve(true);
-    else resolve(false);
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay confirm-overlay open';
+    overlay.innerHTML = `
+      <div class="modal confirm-modal" role="dialog" aria-modal="true">
+        <div class="confirm-icon ${tone}">${icon(tone === 'danger' ? 'alert-triangle' : 'info', { size: 26 })}</div>
+        <h2>${escapeHtml(title)}</h2>
+        <p>${escapeHtml(msg)}</p>
+        <div class="confirm-actions">
+          <button type="button" class="btn btn-outline" data-act="cancel">${escapeHtml(cancelText)}</button>
+          <button type="button" class="btn ${tone === 'danger' ? 'btn-danger' : 'btn-primary'}" data-act="confirm">${escapeHtml(confirmText)}</button>
+        </div>
+      </div>`;
+
+    const close = (value) => {
+      overlay.remove();
+      document.removeEventListener('keydown', onKey);
+      resolve(value);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') close(false);
+      if (e.key === 'Enter') close(true);
+    };
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(false); });
+    overlay.querySelector('[data-act="cancel"]').onclick = () => close(false);
+    overlay.querySelector('[data-act="confirm"]').onclick = () => close(true);
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(overlay);
+    overlay.querySelector('[data-act="confirm"]').focus();
   });
 }
 

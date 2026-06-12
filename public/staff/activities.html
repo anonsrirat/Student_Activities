@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>จัดการกิจกรรม — ระบบกิจกรรมนิสิต TSU</title>
-  <link rel="stylesheet" href="/shared/style.css?v=20260612-4">
+  <link rel="stylesheet" href="/shared/style.css?v=20260612-5">
 </head>
 <body>
   <div class="layout">
@@ -17,6 +17,22 @@
         <div class="page-header">
           <div><h1>จัดการกิจกรรม</h1><p>เพิ่ม แก้ไข และลบกิจกรรม</p></div>
           <button class="btn btn-primary" onclick="openCreateModal()" id="add-btn">เพิ่มกิจกรรม</button>
+        </div>
+
+        <div class="time-debug-card" id="time-debug">
+          <div class="time-debug-head">
+            <div>
+              <strong>ตรวจสอบเวลาระบบรับสมัคร</strong>
+              <p>ใช้ดูว่าเวลา Browser, Server และ Database ตรงกันหรือไม่</p>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="loadTimeDebug()">รีเฟรชเวลา</button>
+          </div>
+          <div class="time-debug-grid">
+            <div><span>Browser</span><strong id="time-browser">-</strong></div>
+            <div><span>Server Bangkok</span><strong id="time-server">-</strong></div>
+            <div><span>Database NOW()</span><strong id="time-db">-</strong></div>
+            <div><span>DB Time zone</span><strong id="time-zone">-</strong></div>
+          </div>
         </div>
 
         <div class="filter-bar">
@@ -58,6 +74,7 @@
             <div class="form-group">
               <label class="form-label">หมวดหมู่</label>
               <select class="form-control" id="f-category"></select>
+              <div id="f-category-preview" class="category-select-preview text-sm text-muted mt-2">ยังไม่เลือกหมวดหมู่</div>
             </div>
             <div class="form-group">
               <label class="form-label">สถานะ</label>
@@ -128,7 +145,12 @@
           </div>
           <div class="form-group">
             <label class="form-label">สถานที่</label>
-            <input type="text" class="form-control" id="f-location" placeholder="ห้อง / อาคาร / สถานที่">
+            <div class="location-row">
+              <input type="text" class="form-control" id="f-location" list="location-options" placeholder="ห้อง / อาคาร / สถานที่">
+              <button type="button" class="btn btn-outline" onclick="saveLocationPreset()" id="save-location-btn">บันทึกห้องนี้</button>
+            </div>
+            <datalist id="location-options"></datalist>
+            <div id="location-presets" class="preset-list"></div>
           </div>
           <div class="form-row cols-2">
             <div class="form-group">
@@ -137,7 +159,7 @@
             </div>
             <div class="form-group">
               <label class="form-label">ชั่วโมงที่ได้รับ</label>
-              <input type="number" class="form-control" id="f-hours" min="0" step="0.5" value="0">
+              <input type="number" class="form-control" id="f-hours" min="0" step="1" value="0">
             </div>
           </div>
           <div class="form-group">
@@ -153,11 +175,12 @@
     </div>
   </div>
 
-  <script src="/shared/icons.js?v=20260612-4"></script>
-  <script src="/shared/datepicker.js?v=20260612-4"></script>
-  <script src="/shared/app.js?v=20260612-4"></script>
+  <script src="/shared/icons.js?v=20260612-5"></script>
+  <script src="/shared/datepicker.js?v=20260612-5"></script>
+  <script src="/shared/app.js?v=20260612-5"></script>
   <script>
     let categories = [];
+    let savedLocations = [];
     let currentPage = 1;
 
     async function loadCategories() {
@@ -165,8 +188,83 @@
       const sel = document.getElementById('f-category');
       const filterSel = document.getElementById('filter-category');
       const none = '<option value="">-- ไม่ระบุ --</option>';
-      sel.innerHTML = none + categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-      filterSel.innerHTML = '<option value="">ทุกหมวดหมู่</option>' + categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      sel.innerHTML = none + categories.map(c => `<option value="${c.id}">● ${c.name}</option>`).join('');
+      filterSel.innerHTML = '<option value="">ทุกหมวดหมู่</option>' + categories.map(c => `<option value="${c.id}">● ${c.name}</option>`).join('');
+      sel.onchange = updateCategoryPreview;
+      updateCategoryPreview();
+    }
+
+    function updateCategoryPreview() {
+      const id = document.getElementById('f-category').value;
+      const cat = categories.find(c => String(c.id) === String(id));
+      document.getElementById('f-category-preview').innerHTML = cat ? categoryBadge(cat) : 'ยังไม่เลือกหมวดหมู่';
+    }
+
+    async function loadLocations() {
+      try {
+        savedLocations = await api.get('/api/activities/locations');
+      } catch {
+        savedLocations = [];
+      }
+      renderLocationPresets();
+    }
+
+    function renderLocationPresets() {
+      const datalist = document.getElementById('location-options');
+      const list = document.getElementById('location-presets');
+      datalist.innerHTML = savedLocations.map(l => `<option value="${escapeHtml(l.name)}"></option>`).join('');
+      if (!savedLocations.length) {
+        list.innerHTML = '<span class="text-sm text-muted">ยังไม่มีห้องที่บันทึกไว้</span>';
+        return;
+      }
+      list.innerHTML = savedLocations.slice(0, 8).map(l => {
+        const jsName = JSON.stringify(l.name).replace(/</g, '\\u003c');
+        return `
+          <button type="button" class="preset-chip" onclick='useLocationPreset(${jsName})'>${escapeHtml(l.name)}</button>
+          <button type="button" class="preset-remove" onclick="deleteLocationPreset(${l.id})" title="ลบห้องนี้">${icon('x', { size: 12 })}</button>
+        `;
+      }).join('');
+    }
+
+    function useLocationPreset(name) {
+      document.getElementById('f-location').value = name;
+    }
+
+    async function saveLocationPreset() {
+      const name = document.getElementById('f-location').value.trim();
+      if (!name) { toast('กรุณากรอกชื่อห้องหรือสถานที่ก่อนบันทึก', 'warning'); return; }
+      try {
+        await api.post('/api/activities/locations', { name });
+        toast('บันทึกห้องไว้ใช้ครั้งต่อไปแล้ว', 'success');
+        await loadLocations();
+      } catch (e) { toast(e.error || 'บันทึกห้องไม่สำเร็จ', 'error'); }
+    }
+
+    async function deleteLocationPreset(id) {
+      if (!await confirmDialog('ต้องการลบห้องหรือสถานที่นี้ออกจากรายการล่วงหน้าหรือไม่?', { title: 'ลบห้องที่บันทึกไว้', confirmText: 'ลบ', tone: 'danger' })) return;
+      try {
+        await api.del(`/api/activities/locations/${id}`);
+        await loadLocations();
+      } catch (e) { toast(e.error || 'ลบห้องไม่สำเร็จ', 'error'); }
+    }
+
+    function updateBrowserTime() {
+      const el = document.getElementById('time-browser');
+      if (!el) return;
+      el.textContent = new Date().toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'medium' });
+    }
+
+    async function loadTimeDebug() {
+      updateBrowserTime();
+      try {
+        const data = await api.get('/api/activities/debug/time');
+        document.getElementById('time-server').textContent = data.server_now_bangkok || data.server_now_iso || '-';
+        document.getElementById('time-db').textContent = data.db_now || '-';
+        document.getElementById('time-zone').textContent = `session ${data.db_session_time_zone || '-'} / global ${data.db_global_time_zone || '-'}`;
+      } catch {
+        document.getElementById('time-server').textContent = 'โหลดไม่ได้';
+        document.getElementById('time-db').textContent = 'โหลดไม่ได้';
+      }
     }
 
     async function loadActivities(page = 1) {
@@ -192,11 +290,14 @@
                 <td><span class="font-semibold">${a.title}</span></td>
                 <td>${activityScheduleLabel(a)}</td>
                 <td>${categoryBadge(a) || '-'}</td>
-                <td>${a.hours_credit} ชม.</td>
+                <td>${formatHours(a.hours_credit)}</td>
                 <td>${a.registered_count}${a.capacity > 0 ? '/' + a.capacity : ''}</td>
-                <td>${badgeStatus(a.status)}</td>
+                <td>${activityStatusBadge(a)}</td>
                 <td>
                   <div class="flex gap-2">
+                    ${a.status === 'open'
+                      ? `<button class="btn btn-warning btn-sm" onclick="quickSetStatus(${a.id}, 'closed')" title="ปิดรับสมัคร">${icon('x', { size: 14 })} ปิดรับ</button>`
+                      : `<button class="btn btn-success btn-sm" onclick="quickSetStatus(${a.id}, 'open')" title="เปิดรับสมัคร">${icon('check', { size: 14 })} เปิดรับ</button>`}
                     <button class="btn btn-outline btn-sm" onclick='openEditModal(${JSON.stringify(a)})' title="แก้ไข">${icon('edit', { size: 14 })}</button>
                     <button class="btn btn-danger btn-sm" onclick="deleteActivity(${a.id})" title="ลบ">${icon('trash', { size: 14 })}</button>
                   </div>
@@ -213,6 +314,7 @@
       document.getElementById('edit-id').value = '';
       document.getElementById('activity-form').reset();
       document.getElementById('f-duration-mode').value = 'single';
+      updateCategoryPreview();
       document.getElementById('f-date')._setDate?.('');
       document.getElementById('f-end-date')._setDate?.('');
       document.getElementById('f-start')._setTime?.('');
@@ -230,6 +332,7 @@
       document.getElementById('edit-id').value = a.id;
       document.getElementById('f-title').value = a.title || '';
       document.getElementById('f-category').value = a.category_id || '';
+      updateCategoryPreview();
       document.getElementById('f-status').value = a.status || 'open';
       const dateVal = a.date ? a.date.slice(0, 10) : '';
       const endDateVal = a.end_date ? a.end_date.slice(0, 10) : '';
@@ -245,7 +348,7 @@
       setDateTimeControls('f-reg-end', regEnd.date, regEnd.time);
       document.getElementById('f-location').value = a.location || '';
       document.getElementById('f-capacity').value = a.capacity || 0;
-      document.getElementById('f-hours').value = a.hours_credit || 0;
+      document.getElementById('f-hours').value = Math.round(Number(a.hours_credit || 0));
       document.getElementById('f-desc').value = a.description || '';
       syncDurationMode();
       syncRegWindow();
@@ -306,9 +409,16 @@
         registration_end_at: useRegWindow ? buildDateTime(regEndDate, regEndTime || '23:59') : null,
         location: document.getElementById('f-location').value,
         capacity: document.getElementById('f-capacity').value,
-        hours_credit: document.getElementById('f-hours').value,
+        hours_credit: Math.round(Number(document.getElementById('f-hours').value || 0)),
         description: document.getElementById('f-desc').value,
       };
+      if (!await confirmDialog(id ? 'ต้องการบันทึกการแก้ไขกิจกรรมนี้หรือไม่?' : 'ต้องการสร้างกิจกรรมนี้หรือไม่?', {
+        title: id ? 'ยืนยันการแก้ไขกิจกรรม' : 'ยืนยันการสร้างกิจกรรม',
+        confirmText: 'บันทึก'
+      })) {
+        btn.disabled = false;
+        return;
+      }
       try {
         if (id) await api.put(`/api/activities/${id}`, body);
         else await api.post('/api/activities', body);
@@ -320,12 +430,22 @@
     }
 
     async function deleteActivity(id) {
-      if (!await confirmDialog('ต้องการลบกิจกรรมนี้หรือไม่?')) return;
+      if (!await confirmDialog('ต้องการลบกิจกรรมนี้หรือไม่?', { title: 'ลบกิจกรรม', confirmText: 'ลบ', tone: 'danger' })) return;
       try {
         await api.del(`/api/activities/${id}`);
         toast('ลบกิจกรรมแล้ว', 'success');
         loadActivities(currentPage);
       } catch (e) { toast(e.error || 'เกิดข้อผิดพลาด', 'error'); }
+    }
+
+    async function quickSetStatus(id, status) {
+      const label = status === 'open' ? 'เปิดรับสมัคร' : 'ปิดรับสมัคร';
+      if (!await confirmDialog(`ต้องการ${label}กิจกรรมนี้หรือไม่?`, { title: `ยืนยัน${label}`, confirmText: label })) return;
+      try {
+        await api.put(`/api/activities/${id}/status`, { status });
+        toast(`${label}แล้ว`, 'success');
+        loadActivities(currentPage);
+      } catch (e) { toast(e.error || 'เปลี่ยนสถานะไม่สำเร็จ', 'error'); }
     }
 
     (async () => {
@@ -335,6 +455,9 @@
       document.getElementById('add-btn').innerHTML = `${icon('plus', { size: 16 })} เพิ่มกิจกรรม`;
       await initLayout({ activePage: '/staff/activities', requireRole: 'staff' });
       await loadCategories();
+      await loadLocations();
+      await loadTimeDebug();
+      setInterval(updateBrowserTime, 1000);
       loadActivities();
       const doSearch = debounce(() => loadActivities(1));
       document.getElementById('search').addEventListener('input', doSearch);

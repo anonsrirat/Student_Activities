@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>จัดการผู้ใช้ — ระบบกิจกรรมนิสิต TSU</title>
-  <link rel="stylesheet" href="/shared/style.css?v=20260612-4">
+  <link rel="stylesheet" href="/shared/style.css?v=20260612-5">
 </head>
 <body>
   <div class="layout">
@@ -37,9 +37,9 @@
     </div>
   </div>
 
-  <script src="/shared/icons.js?v=20260612-4"></script>
-  <script src="/shared/datepicker.js?v=20260612-4"></script>
-  <script src="/shared/app.js?v=20260612-4"></script>
+  <script src="/shared/icons.js?v=20260612-5"></script>
+  <script src="/shared/datepicker.js?v=20260612-5"></script>
+  <script src="/shared/app.js?v=20260612-5"></script>
   <script>
     let currentPage = 1;
 
@@ -72,7 +72,7 @@
                 <td>${badgeStatus(u.role)}</td>
                 <td class="text-sm text-muted">${fmtDate(u.created_at)}</td>
                 <td>
-                  <select class="form-control" style="width:auto;padding:4px 8px;font-size:.8rem" onchange="changeRole(${u.id}, this.value)" data-current="${u.role}">
+                  <select class="form-control" style="width:auto;padding:4px 8px;font-size:.8rem" onchange="changeRole(${u.id}, this.value, this)" data-current="${u.role}">
                     <option value="student"${u.role==='student'?' selected':''}>นิสิต</option>
                     <option value="staff"${u.role==='staff'?' selected':''}>เจ้าหน้าที่</option>
                   </select>
@@ -84,9 +84,18 @@
       } catch { toast('เกิดข้อผิดพลาด', 'error'); }
     }
 
-    async function changeRole(id, newRole) {
+    async function changeRole(id, newRole, selectEl) {
+      const oldRole = selectEl?.dataset.current || '';
+      if (!await confirmDialog(`ต้องการเปลี่ยนสิทธิ์ผู้ใช้นี้เป็น "${newRole === 'staff' ? 'เจ้าหน้าที่' : 'นิสิต'}" หรือไม่?`, {
+        title: 'ยืนยันการเปลี่ยนสิทธิ์',
+        confirmText: 'เปลี่ยนสิทธิ์'
+      })) {
+        if (selectEl) selectEl.value = oldRole;
+        return;
+      }
       try {
         await api.put(`/api/users/${id}/role`, { role: newRole });
+        if (selectEl) selectEl.dataset.current = newRole;
         toast(`เปลี่ยน role เป็น "${newRole === 'staff' ? 'เจ้าหน้าที่' : 'นิสิต'}" สำเร็จ`, 'success');
       } catch (e) { toast(e.error || 'เกิดข้อผิดพลาด', 'error'); loadUsers(currentPage); }
     }

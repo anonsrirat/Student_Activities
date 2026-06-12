@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ยื่นหลักฐาน — ระบบกิจกรรมนิสิต TSU</title>
-  <link rel="stylesheet" href="/shared/style.css?v=20260612-4">
+  <link rel="stylesheet" href="/shared/style.css?v=20260612-5">
 </head>
 <body>
   <div class="layout">
@@ -83,9 +83,9 @@
     </div>
   </div>
 
-  <script src="/shared/icons.js?v=20260612-4"></script>
-  <script src="/shared/datepicker.js?v=20260612-4"></script>
-  <script src="/shared/app.js?v=20260612-4"></script>
+  <script src="/shared/icons.js?v=20260612-5"></script>
+  <script src="/shared/datepicker.js?v=20260612-5"></script>
+  <script src="/shared/app.js?v=20260612-5"></script>
   <script>
     const presetId = new URLSearchParams(location.search).get('id');
 
@@ -114,7 +114,7 @@
       if (!reg) return;
       document.getElementById('activity-info').style.display = 'block';
       document.getElementById('activity-title').textContent = reg.title;
-      document.getElementById('activity-meta').textContent = `${fmtDate(reg.date)} · ${reg.hours_credit} ชม.`;
+      document.getElementById('activity-meta').textContent = `${activityDateLabel(reg)} · ${formatHours(reg.hours_credit)}`;
       loadPrevSubmissions(id);
     }
 
@@ -150,6 +150,10 @@
       const actId = formData.get('activity_id') || presetId;
       if (!actId) { errEl.textContent = 'กรุณาเลือกกิจกรรม'; errEl.style.display = 'block'; btn.disabled = false; btn.textContent = 'ยื่นหลักฐาน'; return; }
       formData.set('activity_id', actId);
+      if (!await confirmDialog('ต้องการยื่นหลักฐานกิจกรรมนี้หรือไม่?', { title: 'ยืนยันการยื่นหลักฐาน', confirmText: 'ยื่นหลักฐาน' })) {
+        btn.disabled = false; btn.textContent = 'ยื่นหลักฐาน';
+        return;
+      }
 
       try {
         await api.post('/api/evidence', formData, true);

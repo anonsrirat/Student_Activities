@@ -190,14 +190,14 @@ function initTimePicker(input) {
       <div class="tp-body">
         <div class="tp-col">
           <button type="button" class="tp-step" data-act="h-up">${icon('chevron-up', { size: 14 })}</button>
-          <div class="tp-val">${pad2(h)}</div>
+          <button type="button" class="tp-val tp-val-edit" data-part="h" title="คลิกเพื่อพิมพ์ชั่วโมง">${pad2(h)}</button>
           <button type="button" class="tp-step" data-act="h-down">${icon('chevron-down', { size: 14 })}</button>
           <div class="tp-label">ชั่วโมง</div>
         </div>
         <div class="tp-colon">:</div>
         <div class="tp-col">
           <button type="button" class="tp-step" data-act="m-up">${icon('chevron-up', { size: 14 })}</button>
-          <div class="tp-val">${pad2(m)}</div>
+          <button type="button" class="tp-val tp-val-edit" data-part="m" title="คลิกเพื่อพิมพ์นาที">${pad2(m)}</button>
           <button type="button" class="tp-step" data-act="m-down">${icon('chevron-down', { size: 14 })}</button>
           <div class="tp-label">นาที</div>
         </div>
@@ -212,7 +212,38 @@ function initTimePicker(input) {
     panel.querySelector('[data-act="m-down"]').onclick = () => { m = (m+55)%60; render(); };
     panel.querySelector('[data-act="ok"]').onclick = () => commit(pad2(h)+':'+pad2(m));
     panel.querySelector('[data-act="clear"]').onclick = () => commit('');
+    panel.querySelector('[data-part="h"]').onclick = () => editPart('h');
+    panel.querySelector('[data-part="m"]').onclick = () => editPart('m');
   }
+
+  function editPart(part) {
+    const btn = panel?.querySelector(`[data-part="${part}"]`);
+    if (!btn) return;
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.className = 'tp-input';
+    input.min = '0';
+    input.max = part === 'h' ? '23' : '59';
+    input.value = part === 'h' ? pad2(h) : pad2(m);
+    btn.replaceWith(input);
+    input.focus();
+    input.select();
+
+    const apply = () => {
+      const max = part === 'h' ? 23 : 59;
+      const raw = Number(input.value);
+      const value = Number.isFinite(raw) ? Math.min(max, Math.max(0, Math.round(raw))) : 0;
+      if (part === 'h') h = value;
+      else m = value;
+      render();
+    };
+    input.addEventListener('blur', apply, { once: true });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+      if (e.key === 'Escape') { e.preventDefault(); render(); }
+    });
+  }
+
   function commit(v) {
     input.value = v;
     display.querySelector('.dp-value').textContent = v || 'เลือกเวลา';

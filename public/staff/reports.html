@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>รายงาน — ระบบกิจกรรมนิสิต TSU</title>
-  <link rel="stylesheet" href="/shared/style.css?v=20260612-4">
+  <link rel="stylesheet" href="/shared/style.css?v=20260612-5">
 </head>
 <body>
   <div class="layout">
@@ -35,9 +35,9 @@
     </div>
   </div>
 
-  <script src="/shared/icons.js?v=20260612-4"></script>
-  <script src="/shared/datepicker.js?v=20260612-4"></script>
-  <script src="/shared/app.js?v=20260612-4"></script>
+  <script src="/shared/icons.js?v=20260612-5"></script>
+  <script src="/shared/datepicker.js?v=20260612-5"></script>
+  <script src="/shared/app.js?v=20260612-5"></script>
   <script>
     async function loadCategories() {
       try {
@@ -74,7 +74,7 @@
               <td class="font-semibold">${s.name}</td>
               <td class="text-sm">${s.email}</td>
               <td style="text-align:center">${s.total_activities}</td>
-              <td style="text-align:center"><span class="font-semibold">${(s.total_hours || 0).toFixed(1)}</span> ชม.</td>
+              <td style="text-align:center"><span class="font-semibold">${formatHourNumber(s.total_hours)}</span> ชม.</td>
               <td style="text-align:center">${s.pending_activities > 0 ? `<span class="badge badge-pending">${s.pending_activities}</span>` : '-'}</td>
             </tr>`).join('')}
           </tbody></table></div>`;

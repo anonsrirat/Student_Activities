@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>เกณฑ์กิจกรรม — ระบบกิจกรรมนิสิต TSU</title>
-  <link rel="stylesheet" href="/shared/style.css?v=20260612-4">
+  <link rel="stylesheet" href="/shared/style.css?v=20260612-5">
 </head>
 <body>
   <div class="layout">
@@ -38,9 +38,9 @@
     </div>
   </div>
 
-  <script src="/shared/icons.js?v=20260612-4"></script>
-  <script src="/shared/datepicker.js?v=20260612-4"></script>
-  <script src="/shared/app.js?v=20260612-4"></script>
+  <script src="/shared/icons.js?v=20260612-5"></script>
+  <script src="/shared/datepicker.js?v=20260612-5"></script>
+  <script src="/shared/app.js?v=20260612-5"></script>
   <script>
     (async () => {
       await initLayout({ activePage: '/criteria' });
@@ -64,23 +64,24 @@
         grid.innerHTML = categories.map(cat => {
           const pct = cat.min_hours > 0 ? Math.min(100, (cat.earned_hours / cat.min_hours) * 100) : 100;
           const barClass = pct >= 100 ? 'done' : pct > 0 ? 'partial' : 'none';
+          const remaining = Math.max(0, cat.min_hours - (cat.earned_hours || 0));
           return `
-            <div class="card">
+            <div class="criteria-card criteria-card-${categoryThemeKey(cat)}">
               <div class="card-body">
                 <div class="flex justify-between items-center mb-2">
-                  <h3 class="font-semibold">${cat.name}</h3>
+                  ${categoryBadge(cat)}
                   <span class="badge ${cat.passed ? 'badge-approved' : 'badge-pending'}">${cat.passed ? icon('check', { size: 12 }) + ' ผ่าน' : 'ยังไม่ผ่าน'}</span>
                 </div>
                 ${cat.description ? `<p class="text-sm text-muted mb-3">${cat.description}</p>` : ''}
                 <div class="flex justify-between text-sm mb-2">
                   <span class="text-muted">ชั่วโมงสะสม</span>
-                  <span class="font-semibold">${(cat.earned_hours || 0).toFixed(1)} / ${cat.min_hours} ชม.</span>
+                  <span class="font-semibold">${formatHourNumber(cat.earned_hours)} / ${formatHourNumber(cat.min_hours)} ชม.</span>
                 </div>
                 <div class="progress" style="height:10px">
                   <div class="progress-bar ${barClass}" style="width:${pct}%"></div>
                 </div>
                 <div class="text-sm text-muted mt-2">
-                  ${pct >= 100 ? '✓ ผ่านเกณฑ์แล้ว' : `ต้องเพิ่มอีก ${Math.max(0, cat.min_hours - (cat.earned_hours || 0)).toFixed(1)} ชม.`}
+                  ${pct >= 100 ? '✓ ผ่านเกณฑ์แล้ว' : `ต้องเพิ่มอีก ${formatHours(remaining)}`}
                 </div>
               </div>
             </div>`;

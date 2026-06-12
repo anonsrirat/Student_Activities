@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>กิจกรรมทั้งหมด — ระบบกิจกรรมนิสิต TSU</title>
-  <link rel="stylesheet" href="/shared/style.css?v=20260612-4">
+  <link rel="stylesheet" href="/shared/style.css?v=20260612-5">
 </head>
 <body>
   <div class="layout">
@@ -46,9 +46,9 @@
     </div>
   </div>
 
-  <script src="/shared/icons.js?v=20260612-4"></script>
-  <script src="/shared/datepicker.js?v=20260612-4"></script>
-  <script src="/shared/app.js?v=20260612-4"></script>
+  <script src="/shared/icons.js?v=20260612-5"></script>
+  <script src="/shared/datepicker.js?v=20260612-5"></script>
+  <script src="/shared/app.js?v=20260612-5"></script>
   <script>
     let currentPage = 1;
     let categories = [];
@@ -105,7 +105,7 @@
           <div class="activity-card-header">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
               <h3 class="truncate">${a.title}</h3>
-              ${badgeStatus(a.status)}
+              ${activityStatusBadge(a)}
             </div>
             <div style="margin-top:8px">${categoryBadge(a)}</div>
           </div>
@@ -114,7 +114,7 @@
               <div class="activity-meta-row">${icon('calendar', { size: 14 })}<span>${activityDateLabel(a)}</span></div>
               <div class="activity-meta-row">${icon('clock', { size: 14 })}<span>${activityTimeLabel(a)}</span></div>
               ${a.location ? `<div class="activity-meta-row">${icon('map-pin', { size: 14 })}<span>${a.location}</span></div>` : ''}
-              <div class="activity-meta-row">${icon('chart-bar', { size: 14 })}<span>${a.hours_credit} ชั่วโมงกิจกรรม</span></div>
+              <div class="activity-meta-row">${icon('chart-bar', { size: 14 })}<span>${formatHours(a.hours_credit)} กิจกรรม</span></div>
               <div class="activity-meta-row">${icon('info', { size: 14 })}<span>${registrationWindowText(a)}</span></div>
               <div class="activity-meta-row">${icon('users', { size: 14 })}<span>${a.registered_count}${a.capacity > 0 ? ' / ' + a.capacity : ''} คน${full ? ' (เต็ม)' : ''}</span></div>
             </div>
@@ -131,6 +131,7 @@
     }
 
     async function register(id, btn) {
+      if (!await confirmDialog('ต้องการลงทะเบียนกิจกรรมนี้หรือไม่?', { title: 'ยืนยันการลงทะเบียน', confirmText: 'ลงทะเบียน' })) return;
       btn.disabled = true; btn.textContent = 'กำลังลงทะเบียน...';
       try {
         await api.post(`/api/activities/${id}/register`, {});

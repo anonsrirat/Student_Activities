@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ตรวจหลักฐาน — ระบบกิจกรรมนิสิต TSU</title>
-  <link rel="stylesheet" href="/shared/style.css?v=20260612-4">
+  <link rel="stylesheet" href="/shared/style.css?v=20260612-5">
 </head>
 <body>
   <div class="layout">
@@ -59,9 +59,9 @@
     </div>
   </div>
 
-  <script src="/shared/icons.js?v=20260612-4"></script>
-  <script src="/shared/datepicker.js?v=20260612-4"></script>
-  <script src="/shared/app.js?v=20260612-4"></script>
+  <script src="/shared/icons.js?v=20260612-5"></script>
+  <script src="/shared/datepicker.js?v=20260612-5"></script>
+  <script src="/shared/app.js?v=20260612-5"></script>
   <script>
     let currentPage = 1;
     let reviewingId = null;
@@ -120,6 +120,12 @@
     async function doReview(status) {
       if (!reviewingId) return;
       const note = document.getElementById('review-note').value;
+      const approved = status === 'approved';
+      if (!await confirmDialog(approved ? 'ต้องการอนุมัติหลักฐานนี้หรือไม่?' : 'ต้องการปฏิเสธหลักฐานนี้หรือไม่?', {
+        title: approved ? 'ยืนยันการอนุมัติ' : 'ยืนยันการปฏิเสธ',
+        confirmText: approved ? 'อนุมัติ' : 'ปฏิเสธ',
+        tone: approved ? 'primary' : 'danger'
+      })) return;
       try {
         await api.put(`/api/evidence/${reviewingId}/review`, { status, reviewer_note: note });
         toast(status === 'approved' ? 'อนุมัติหลักฐานแล้ว' : 'ปฏิเสธหลักฐานแล้ว', 'success');

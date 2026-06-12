@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>แดชบอร์ด (เจ้าหน้าที่) — ระบบกิจกรรมนิสิต TSU</title>
-  <link rel="stylesheet" href="/shared/style.css?v=20260612-4">
+  <link rel="stylesheet" href="/shared/style.css?v=20260612-5">
 </head>
 <body>
   <div class="layout">
@@ -52,9 +52,9 @@
     </div>
   </div>
 
-  <script src="/shared/icons.js?v=20260612-4"></script>
-  <script src="/shared/datepicker.js?v=20260612-4"></script>
-  <script src="/shared/app.js?v=20260612-4"></script>
+  <script src="/shared/icons.js?v=20260612-5"></script>
+  <script src="/shared/datepicker.js?v=20260612-5"></script>
+  <script src="/shared/app.js?v=20260612-5"></script>
   <script>
     (async () => {
       // Inflate data-icon stat icons + quick links
@@ -83,7 +83,7 @@
                 <div class="notif-title">${a.title}</div>
                 <div class="notif-msg">${fmtDate(a.date)} · ${a.registered_count} คน</div>
               </div>
-              ${badgeStatus(a.status)}
+              ${activityStatusBadge(a)}
             </div>`).join('');
         } else {
           el.innerHTML = '<div class="empty-state" style="padding:24px"><p>ยังไม่มีกิจกรรม</p></div>';

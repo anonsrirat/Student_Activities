@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>กิจกรรมของฉัน — ระบบกิจกรรมนิสิต TSU</title>
-  <link rel="stylesheet" href="/shared/style.css?v=20260612-4">
+  <link rel="stylesheet" href="/shared/style.css?v=20260612-5">
 </head>
 <body>
   <div class="layout">
@@ -40,9 +40,9 @@
     </div>
   </div>
 
-  <script src="/shared/icons.js?v=20260612-4"></script>
-  <script src="/shared/datepicker.js?v=20260612-4"></script>
-  <script src="/shared/app.js?v=20260612-4"></script>
+  <script src="/shared/icons.js?v=20260612-5"></script>
+  <script src="/shared/datepicker.js?v=20260612-5"></script>
+  <script src="/shared/app.js?v=20260612-5"></script>
   <script>
     let allRegs = [];
 
@@ -57,20 +57,23 @@
         <table>
           <thead><tr><th>กิจกรรม</th><th>วันที่</th><th>หมวดหมู่</th><th>ชั่วโมง</th><th>สถานะการเข้าร่วม</th><th>การดำเนินการ</th></tr></thead>
           <tbody>
-            ${data.map(r => `
+            ${data.map(r => {
+              const regState = registrationState(r);
+              return `
               <tr>
                 <td><a href="/activity-detail?id=${r.activity_id}" class="font-semibold">${r.title}</a></td>
                 <td>${activityDateLabel(r)}</td>
                 <td>${categoryBadge(r) || '-'}</td>
-                <td>${r.hours_credit} ชม.</td>
+                <td>${formatHours(r.hours_credit)}</td>
                 <td>${badgeStatus(r.status)}</td>
                 <td>
                   <div class="flex gap-2">
                     <a href="/submit-evidence?id=${r.activity_id}" class="btn btn-outline btn-sm">ยื่นหลักฐาน</a>
-                    ${r.status === 'registered' ? `<button class="btn btn-ghost btn-sm" onclick="cancelReg(${r.activity_id})">ยกเลิก</button>` : ''}
+                    ${r.status === 'registered' && regState.ok ? `<button class="btn btn-ghost btn-sm" onclick="cancelReg(${r.activity_id})">ยกเลิก</button>` : ''}
                   </div>
                 </td>
-              </tr>`).join('')}
+              </tr>`;
+            }).join('')}
           </tbody>
         </table>
       </div>`;
