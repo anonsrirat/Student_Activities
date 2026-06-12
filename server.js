@@ -77,10 +77,13 @@ app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// Static files (CSS, JS, images) — cache for 7 days
+// Static files: revalidate so HTML and shared JS/CSS do not drift after deploys
 app.use(express.static(path.join(__dirname, 'public'), {
-  maxAge: process.env.NODE_ENV === 'production' ? '7d' : 0,
-  etag: true
+  maxAge: 0,
+  etag: true,
+  setHeaders: (res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+  }
 }));
 
 // 404
