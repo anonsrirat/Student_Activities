@@ -1,22 +1,18 @@
 require('dotenv').config();
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const session = require('express-session');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const { init } = require('./db/database');
 
 const app = express();
 
+// Trust reverse proxy (Coolify / Traefik) so secure cookies work over HTTPS
+app.set('trust proxy', 1);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'dev-session-secret-change-in-production',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
-}));
 
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

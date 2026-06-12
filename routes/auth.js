@@ -75,7 +75,12 @@ router.get('/google/callback', async (req, res) => {
     }
 
     const token = makeJWT(user);
-    res.cookie('token', token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
+    res.cookie('token', token, {
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production'
+    });
     res.redirect(user.role === 'staff' ? '/staff/dashboard' : '/dashboard');
   } catch (err) {
     console.error('OAuth error:', err);
