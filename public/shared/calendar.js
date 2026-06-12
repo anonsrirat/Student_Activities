@@ -36,11 +36,15 @@ class ActivityCalendar {
     const daysInMonth = new Date(y, m+1, 0).getDate();
     const todayISO = toISO(new Date());
 
-    // group by date
+    // group by every date touched by each activity
     const byDate = {};
     this.activities.forEach(a => {
-      const iso = a.date.slice(0, 10);
-      (byDate[iso] = byDate[iso] || []).push(a);
+      const start = parseISO(a.date.slice(0, 10));
+      const end = a.end_date ? parseISO(a.end_date.slice(0, 10)) : start;
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const iso = toISO(d);
+        (byDate[iso] = byDate[iso] || []).push(a);
+      }
     });
 
     let cells = '';
@@ -50,8 +54,8 @@ class ActivityCalendar {
       const list = byDate[iso] || [];
       const isToday = iso === todayISO;
       const dots = list.slice(0, 3).map(a => {
-        const cls = a.status === 'open' ? 'dot-open' : a.status === 'closed' ? 'dot-closed' : 'dot-cancel';
-        return `<div class="cal-event ${cls}" data-id="${a.id}" title="${a.title}">${a.start_time ? a.start_time.slice(0,5) + ' ' : ''}${a.title}</div>`;
+        const statusCls = a.status === 'cancelled' ? 'dot-cancel' : a.status === 'closed' ? 'dot-closed' : '';
+        return `<div class="cal-event cal-cat-${categoryThemeKey(a)} ${statusCls}" data-id="${a.id}" title="${a.title}">${a.start_time ? a.start_time.slice(0,5) + ' ' : ''}${a.title}</div>`;
       }).join('');
       const more = list.length > 3 ? `<div class="cal-more">+${list.length - 3} เพิ่มเติม</div>` : '';
       cells += `
@@ -69,11 +73,7 @@ class ActivityCalendar {
           <div class="cal-title">${THAI_MONTHS[m]} ${y + 543}</div>
           <button class="btn btn-ghost btn-sm cal-nav" data-act="next">${icon('chevron-right', { size: 18 })}</button>
         </div>
-        <div class="cal-legend">
-          <span><i class="dot-open"></i>เปิดรับ</span>
-          <span><i class="dot-closed"></i>ปิดรับ</span>
-          <span><i class="dot-cancel"></i>ยกเลิก</span>
-        </div>
+        <div class="cal-legend"><span>สีของกิจกรรมแยกตามประเภท</span></div>
       </div>
       <div class="cal-days">${THAI_DAYS.map(d => `<div class="cal-day-label">${d}</div>`).join('')}</div>
       <div class="cal-grid">${cells}</div>`;

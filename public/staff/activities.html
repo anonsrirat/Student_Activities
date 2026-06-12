@@ -42,7 +42,7 @@
 
   <!-- Modal สร้าง/แก้ไขกิจกรรม -->
   <div class="modal-overlay" id="activity-modal">
-    <div class="modal" style="max-width:680px">
+    <div class="modal" style="max-width:760px">
       <div class="modal-header">
         <h2 id="modal-title">เพิ่มกิจกรรม</h2>
         <button class="modal-close" aria-label="ปิด" id="modal-close-x"></button>
@@ -70,9 +70,22 @@
           </div>
           <div class="form-row cols-3">
             <div class="form-group">
-              <label class="form-label">วันที่ <span class="required">*</span></label>
+              <label class="form-label">ระยะเวลากิจกรรม</label>
+              <select class="form-control" id="f-duration-mode" onchange="syncDurationMode()">
+                <option value="single">กิจกรรมวันเดียว</option>
+                <option value="multi">กิจกรรมหลายวัน</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">วันที่เริ่ม <span class="required">*</span></label>
               <input type="date" class="form-control" id="f-date" required>
             </div>
+            <div class="form-group" id="end-date-group">
+              <label class="form-label">วันที่สิ้นสุด</label>
+              <input type="date" class="form-control" id="f-end-date">
+            </div>
+          </div>
+          <div class="form-row cols-2">
             <div class="form-group">
               <label class="form-label">เวลาเริ่ม</label>
               <input type="time" class="form-control" id="f-start">
@@ -80,6 +93,37 @@
             <div class="form-group">
               <label class="form-label">เวลาสิ้นสุด</label>
               <input type="time" class="form-control" id="f-end">
+            </div>
+          </div>
+          <div class="form-section">
+            <label class="toggle-row">
+              <input type="checkbox" id="f-use-reg-window" onchange="syncRegWindow()">
+              <span>
+                <strong>กำหนดเวลาเปิด-ปิดรับสมัคร</strong>
+                <small>ถ้าไม่เปิด ระบบจะใช้สถานะ “เปิดรับสมัคร/ปิดรับสมัคร” ตามปกติ</small>
+              </span>
+            </label>
+            <div id="reg-window-fields" class="hidden">
+              <div class="form-row cols-2">
+                <div class="form-group">
+                  <label class="form-label">เปิดรับสมัครวันที่</label>
+                  <input type="date" class="form-control" id="f-reg-start-date">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">เวลาเปิดรับ</label>
+                  <input type="time" class="form-control" id="f-reg-start-time">
+                </div>
+              </div>
+              <div class="form-row cols-2">
+                <div class="form-group">
+                  <label class="form-label">ปิดรับสมัครวันที่</label>
+                  <input type="date" class="form-control" id="f-reg-end-date">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">เวลาปิดรับ</label>
+                  <input type="time" class="form-control" id="f-reg-end-time">
+                </div>
+              </div>
             </div>
           </div>
           <div class="form-group">
@@ -142,12 +186,12 @@
           wrap.innerHTML = `<div class="empty-state" style="padding:48px">${icon('calendar', { size: 48, cls: 'empty-icon' })}<h3>ไม่พบกิจกรรม</h3></div>`;
         } else {
           wrap.innerHTML = `<div class="table-wrap"><table>
-            <thead><tr><th>ชื่อกิจกรรม</th><th>วันที่</th><th>หมวดหมู่</th><th>ชั่วโมง</th><th>ผู้สมัคร</th><th>สถานะ</th><th>การดำเนินการ</th></tr></thead>
+            <thead><tr><th>ชื่อกิจกรรม</th><th>วันและเวลา</th><th>หมวดหมู่</th><th>ชั่วโมง</th><th>ผู้สมัคร</th><th>สถานะ</th><th>การดำเนินการ</th></tr></thead>
             <tbody>${data.activities.map(a => `
               <tr>
                 <td><span class="font-semibold">${a.title}</span></td>
-                <td>${fmtDate(a.date)}</td>
-                <td>${a.category_name || '-'}</td>
+                <td>${activityScheduleLabel(a)}</td>
+                <td>${categoryBadge(a) || '-'}</td>
                 <td>${a.hours_credit} ชม.</td>
                 <td>${a.registered_count}${a.capacity > 0 ? '/' + a.capacity : ''}</td>
                 <td>${badgeStatus(a.status)}</td>
@@ -168,9 +212,16 @@
       document.getElementById('modal-title').textContent = 'เพิ่มกิจกรรม';
       document.getElementById('edit-id').value = '';
       document.getElementById('activity-form').reset();
+      document.getElementById('f-duration-mode').value = 'single';
       document.getElementById('f-date')._setDate?.('');
+      document.getElementById('f-end-date')._setDate?.('');
       document.getElementById('f-start')._setTime?.('');
       document.getElementById('f-end')._setTime?.('');
+      document.getElementById('f-use-reg-window').checked = false;
+      setDateTimeControls('f-reg-start', '', '');
+      setDateTimeControls('f-reg-end', '', '');
+      syncDurationMode();
+      syncRegWindow();
       openModal('activity-modal');
     }
 
@@ -181,27 +232,78 @@
       document.getElementById('f-category').value = a.category_id || '';
       document.getElementById('f-status').value = a.status || 'open';
       const dateVal = a.date ? a.date.slice(0, 10) : '';
+      const endDateVal = a.end_date ? a.end_date.slice(0, 10) : '';
+      document.getElementById('f-duration-mode').value = endDateVal && endDateVal !== dateVal ? 'multi' : 'single';
       document.getElementById('f-date')._setDate?.(dateVal);
+      document.getElementById('f-end-date')._setDate?.(endDateVal);
       document.getElementById('f-start')._setTime?.(a.start_time || '');
       document.getElementById('f-end')._setTime?.(a.end_time || '');
+      const regStart = splitDateTime(a.registration_start_at);
+      const regEnd = splitDateTime(a.registration_end_at);
+      document.getElementById('f-use-reg-window').checked = !!(regStart.date || regEnd.date);
+      setDateTimeControls('f-reg-start', regStart.date, regStart.time);
+      setDateTimeControls('f-reg-end', regEnd.date, regEnd.time);
       document.getElementById('f-location').value = a.location || '';
       document.getElementById('f-capacity').value = a.capacity || 0;
       document.getElementById('f-hours').value = a.hours_credit || 0;
       document.getElementById('f-desc').value = a.description || '';
+      syncDurationMode();
+      syncRegWindow();
       openModal('activity-modal');
+    }
+
+    function syncDurationMode() {
+      const isMulti = document.getElementById('f-duration-mode').value === 'multi';
+      document.getElementById('end-date-group').classList.toggle('hidden', !isMulti);
+      if (!isMulti) document.getElementById('f-end-date')._setDate?.('');
+    }
+
+    function syncRegWindow() {
+      const enabled = document.getElementById('f-use-reg-window').checked;
+      document.getElementById('reg-window-fields').classList.toggle('hidden', !enabled);
+      if (!enabled) {
+        setDateTimeControls('f-reg-start', '', '');
+        setDateTimeControls('f-reg-end', '', '');
+      }
+    }
+
+    function setDateTimeControls(prefix, date, time) {
+      document.getElementById(`${prefix}-date`)._setDate?.(date || '');
+      document.getElementById(`${prefix}-time`)._setTime?.(time || '');
     }
 
     async function saveActivity() {
       const btn = document.getElementById('save-btn');
       btn.disabled = true;
       const id = document.getElementById('edit-id').value;
+      const isMulti = document.getElementById('f-duration-mode').value === 'multi';
+      const useRegWindow = document.getElementById('f-use-reg-window').checked;
+      const date = document.getElementById('f-date').value;
+      const endDate = isMulti ? document.getElementById('f-end-date').value : '';
+      const regStartDate = document.getElementById('f-reg-start-date').value;
+      const regStartTime = document.getElementById('f-reg-start-time').value;
+      const regEndDate = document.getElementById('f-reg-end-date').value;
+      const regEndTime = document.getElementById('f-reg-end-time').value;
+      if (isMulti && !endDate) {
+        toast('กรุณาเลือกวันที่สิ้นสุดของกิจกรรมหลายวัน', 'error');
+        btn.disabled = false;
+        return;
+      }
+      if (useRegWindow && (!regStartDate || !regEndDate)) {
+        toast('กรุณาระบุวันเปิดและวันปิดรับสมัคร', 'error');
+        btn.disabled = false;
+        return;
+      }
       const body = {
         title: document.getElementById('f-title').value,
         category_id: document.getElementById('f-category').value || null,
         status: document.getElementById('f-status').value,
-        date: document.getElementById('f-date').value,
+        date,
+        end_date: endDate || null,
         start_time: document.getElementById('f-start').value,
         end_time: document.getElementById('f-end').value,
+        registration_start_at: useRegWindow ? buildDateTime(regStartDate, regStartTime) : null,
+        registration_end_at: useRegWindow ? buildDateTime(regEndDate, regEndTime || '23:59') : null,
         location: document.getElementById('f-location').value,
         capacity: document.getElementById('f-capacity').value,
         hours_credit: document.getElementById('f-hours').value,
@@ -228,6 +330,8 @@
 
     (async () => {
       initAllPickers();
+      syncDurationMode();
+      syncRegWindow();
       document.getElementById('add-btn').innerHTML = `${icon('plus', { size: 16 })} เพิ่มกิจกรรม`;
       await initLayout({ activePage: '/staff/activities', requireRole: 'staff' });
       await loadCategories();

@@ -69,6 +69,83 @@ function timeAgo(d) {
   return fmtDate(d);
 }
 
+function escapeHtml(v) {
+  return String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+
+const CATEGORY_THEMES = ['blue', 'green', 'amber', 'rose', 'violet', 'cyan'];
+
+function categoryThemeKey(item) {
+  const raw = typeof item === 'object' && item ? (item.category_id || item.id || item.category_name || item.name || '') : (item || '');
+  const str = String(raw);
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+  return CATEGORY_THEMES[Math.abs(hash) % CATEGORY_THEMES.length];
+}
+
+function categoryBadge(item) {
+  const name = typeof item === 'object' && item ? (item.category_name || item.name) : item;
+  if (!name) return '';
+  const theme = categoryThemeKey(item);
+  return `<span class="category-badge category-${theme}"><span class="category-dot"></span>${escapeHtml(name)}</span>`;
+}
+
+function activityDateLabel(activity) {
+  const start = activity?.date ? String(activity.date).slice(0, 10) : '';
+  const end = activity?.end_date ? String(activity.end_date).slice(0, 10) : '';
+  if (!start) return '-';
+  if (end && end !== start) return `${fmtDate(start)} - ${fmtDate(end)}`;
+  return fmtDate(start);
+}
+
+function activityTimeLabel(activity) {
+  const start = activity?.start_time ? String(activity.start_time).slice(0, 5) : '';
+  const end = activity?.end_time ? String(activity.end_time).slice(0, 5) : '';
+  if (start && end) return `${start} - ${end}`;
+  return start || end || 'ไม่ระบุเวลา';
+}
+
+function activityScheduleLabel(activity) {
+  return `${activityDateLabel(activity)} · ${activityTimeLabel(activity)}`;
+}
+
+function splitDateTime(value) {
+  if (!value) return { date: '', time: '' };
+  const s = String(value).replace('T', ' ');
+  return { date: s.slice(0, 10), time: s.slice(11, 16) };
+}
+
+function buildDateTime(date, time) {
+  if (!date) return '';
+  return `${date} ${time || '00:00'}:00`;
+}
+
+function registrationWindowText(activity) {
+  if (!activity?.registration_start_at && !activity?.registration_end_at) return 'เปิดรับตามสถานะกิจกรรม';
+  const start = splitDateTime(activity.registration_start_at);
+  const end = splitDateTime(activity.registration_end_at);
+  if (start.date && end.date) return `เปิดรับ ${fmtDate(start.date)} ${start.time || '00:00'} - ${fmtDate(end.date)} ${end.time || '23:59'}`;
+  if (start.date) return `เปิดรับตั้งแต่ ${fmtDate(start.date)} ${start.time || '00:00'}`;
+  return `ปิดรับ ${fmtDate(end.date)} ${end.time || '23:59'}`;
+}
+
+function parseLocalDateTime(value) {
+  if (!value) return null;
+  const s = String(value).replace(' ', 'T');
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function registrationState(activity) {
+  if (activity?.status !== 'open') return { ok: false, label: 'ปิดรับสมัคร' };
+  const now = new Date();
+  const start = parseLocalDateTime(activity.registration_start_at);
+  const end = parseLocalDateTime(activity.registration_end_at);
+  if (start && now < start) return { ok: false, label: 'ยังไม่เปิดรับสมัคร' };
+  if (end && now > end) return { ok: false, label: 'หมดเวลารับสมัคร' };
+  return { ok: true, label: 'สมัครได้' };
+}
+
 function badgeStatus(status) {
   const map = {
     open: ['badge-open', 'เปิดรับสมัคร'], closed: ['badge-closed', 'ปิดรับสมัคร'],
@@ -88,7 +165,6 @@ const studentNav = [
   { href: '/calendar', icon: 'calendar-check', label: 'ปฏิทินกิจกรรม' },
   { href: '/my-activities', icon: 'check-square', label: 'กิจกรรมของฉัน' },
   { href: '/criteria', icon: 'chart-bar', label: 'เกณฑ์กิจกรรม' },
-  { href: '/notifications', icon: 'bell', label: 'การแจ้งเตือน' },
 ];
 const staffNav = [
   { href: '/staff/dashboard', icon: 'dashboard', label: 'แดชบอร์ด' },
@@ -130,10 +206,12 @@ async function initLayout(opts = {}) {
 
   if (cached) {
     renderSidebar(cached);
+    setupNotificationBox(cached);
     // Refresh in background, don't block
     api.get('/api/auth/me').then(fresh => {
       setCachedUser(fresh);
       if (JSON.stringify(fresh) !== JSON.stringify(cached)) renderSidebar(fresh);
+      setupNotificationBox(fresh);
     }).catch(() => {
       clearCachedUser();
       window.location.href = '/login';
@@ -147,6 +225,7 @@ async function initLayout(opts = {}) {
       return null;
     }
     renderSidebar(user);
+    setupNotificationBox(user);
   }
 
   if (requireRole && user.role !== requireRole) {
@@ -204,8 +283,98 @@ async function loadNotifCount() {
       let badge = btn.querySelector('.notif-badge');
       if (!badge) { badge = document.createElement('span'); badge.className = 'notif-badge'; btn.appendChild(badge); }
       badge.textContent = data.unread > 99 ? '99+' : data.unread;
+    } else if (btn) {
+      btn.querySelector('.notif-badge')?.remove();
     }
   } catch {}
+}
+
+let activeNotifBox = null;
+
+function setupNotificationBox(user) {
+  document.querySelectorAll('#notif-btn').forEach(btn => {
+    if (!btn.querySelector('svg')) btn.innerHTML = icon('bell', { size: 18 });
+    btn.setAttribute('aria-label', 'การแจ้งเตือน');
+    if (user?.role !== 'student' || btn._notifInit) return;
+    btn._notifInit = true;
+    btn.setAttribute('href', '#');
+    btn.setAttribute('role', 'button');
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleNotificationBox(btn);
+    });
+  });
+}
+
+function closeNotificationBox() {
+  if (!activeNotifBox) return;
+  activeNotifBox.remove();
+  activeNotifBox = null;
+  document.removeEventListener('pointerdown', closeNotificationBox);
+  window.removeEventListener('resize', closeNotificationBox);
+}
+
+async function toggleNotificationBox(btn) {
+  if (activeNotifBox) { closeNotificationBox(); return; }
+
+  const box = document.createElement('div');
+  box.className = 'notif-popover';
+  box.innerHTML = `<div class="notif-popover-head"><strong>การแจ้งเตือน</strong></div><div class="notif-popover-body"><div class="notif-loading">กำลังโหลด...</div></div>`;
+  box.addEventListener('pointerdown', e => e.stopPropagation());
+  box.addEventListener('click', e => e.stopPropagation());
+  document.body.appendChild(box);
+  activeNotifBox = box;
+
+  const r = btn.getBoundingClientRect();
+  box.style.top = `${window.scrollY + r.bottom + 8}px`;
+  box.style.right = `${Math.max(12, window.innerWidth - window.scrollX - r.right)}px`;
+
+  setTimeout(() => document.addEventListener('pointerdown', closeNotificationBox), 0);
+  window.addEventListener('resize', closeNotificationBox);
+
+  try {
+    const data = await api.get('/api/notifications/my');
+    const items = data.notifications || [];
+    const body = box.querySelector('.notif-popover-body');
+    const unread = Number(data.unread || 0);
+    box.querySelector('.notif-popover-head').innerHTML = `
+      <strong>การแจ้งเตือน</strong>
+      ${unread ? `<button class="btn btn-ghost btn-sm" data-act="read-all">อ่านทั้งหมด</button>` : ''}`;
+
+    if (!items.length) {
+      body.innerHTML = `<div class="notif-empty">${icon('bell', { size: 32 })}<p>ยังไม่มีการแจ้งเตือน</p></div>`;
+    } else {
+      body.innerHTML = items.slice(0, 8).map(n => `
+        <button class="notif-message${n.is_read ? ' read' : ''}" data-id="${n.id}">
+          <span class="notif-dot${n.is_read ? ' read' : ''}"></span>
+          <span class="notif-content">
+            <span class="notif-title">${escapeHtml(n.title)}</span>
+            <span class="notif-msg">${escapeHtml(n.message || '')}</span>
+            <span class="notif-time">${timeAgo(n.created_at)}</span>
+          </span>
+        </button>`).join('');
+    }
+
+    box.querySelector('[data-act="read-all"]')?.addEventListener('click', async () => {
+      await api.put('/api/notifications/read-all', {});
+      closeNotificationBox();
+      await loadNotifCount();
+      toast('อ่านการแจ้งเตือนทั้งหมดแล้ว', 'success');
+    });
+    box.querySelectorAll('.notif-message').forEach(item => {
+      item.addEventListener('click', async () => {
+        if (!item.classList.contains('read')) {
+          await api.put(`/api/notifications/${item.dataset.id}/read`, {});
+          item.classList.add('read');
+          item.querySelector('.notif-dot')?.classList.add('read');
+          await loadNotifCount();
+        }
+      });
+    });
+  } catch {
+    box.querySelector('.notif-popover-body').innerHTML = '<div class="notif-empty"><p>โหลดการแจ้งเตือนไม่สำเร็จ</p></div>';
+  }
 }
 
 async function logout() {

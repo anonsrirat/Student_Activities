@@ -98,21 +98,24 @@
 
     function renderActivityCard(a) {
       const full = a.capacity > 0 && a.registered_count >= a.capacity;
-      const canRegister = a.status === 'open' && !a.is_registered && !full;
+      const regState = registrationState(a);
+      const canRegister = regState.ok && !a.is_registered && !full;
       return `
-        <div class="activity-card">
+        <div class="activity-card activity-card-${categoryThemeKey(a)}">
           <div class="activity-card-header">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
               <h3 class="truncate">${a.title}</h3>
               ${badgeStatus(a.status)}
             </div>
-            ${a.category_name ? `<span class="badge badge-student" style="margin-top:6px">${a.category_name}</span>` : ''}
+            <div style="margin-top:8px">${categoryBadge(a)}</div>
           </div>
           <div class="activity-card-body">
             <div class="activity-card-meta">
-              <div class="activity-meta-row">${icon('calendar', { size: 14 })}<span>${fmtDate(a.date)}${a.start_time ? ' ' + a.start_time : ''}${a.end_time ? ' – ' + a.end_time : ''}</span></div>
+              <div class="activity-meta-row">${icon('calendar', { size: 14 })}<span>${activityDateLabel(a)}</span></div>
+              <div class="activity-meta-row">${icon('clock', { size: 14 })}<span>${activityTimeLabel(a)}</span></div>
               ${a.location ? `<div class="activity-meta-row">${icon('map-pin', { size: 14 })}<span>${a.location}</span></div>` : ''}
-              <div class="activity-meta-row">${icon('clock', { size: 14 })}<span>${a.hours_credit} ชั่วโมง</span></div>
+              <div class="activity-meta-row">${icon('chart-bar', { size: 14 })}<span>${a.hours_credit} ชั่วโมงกิจกรรม</span></div>
+              <div class="activity-meta-row">${icon('info', { size: 14 })}<span>${registrationWindowText(a)}</span></div>
               <div class="activity-meta-row">${icon('users', { size: 14 })}<span>${a.registered_count}${a.capacity > 0 ? ' / ' + a.capacity : ''} คน${full ? ' (เต็ม)' : ''}</span></div>
             </div>
           </div>
@@ -122,7 +125,7 @@
               ? `<span class="badge badge-registered">ลงทะเบียนแล้ว</span>`
               : canRegister
                 ? `<button class="btn btn-primary btn-sm" onclick="register(${a.id}, this)">ลงทะเบียน</button>`
-                : full ? `<span class="text-sm text-muted">เต็มแล้ว</span>` : ''}
+                : `<span class="text-sm text-muted">${full ? 'เต็มแล้ว' : regState.label}</span>`}
           </div>
         </div>`;
     }
@@ -144,6 +147,7 @@
       document.getElementById('filter-category').value = '';
       document.getElementById('filter-status').value = '';
       document.getElementById('filter-date').value = '';
+      document.getElementById('filter-date')._setDate?.('');
       loadActivities(1);
     }
 

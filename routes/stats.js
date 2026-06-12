@@ -22,7 +22,8 @@ router.get('/dashboard', requireAuth, async (req, res) => {
     }
 
     const [myRegistrations] = await pool.query(`
-      SELECT ar.*, a.id as activity_id, a.title, a.date, a.hours_credit, a.status as activity_status, c.name as category_name
+      SELECT ar.*, a.id as activity_id, a.title, a.date, a.end_date, a.start_time, a.end_time,
+        a.hours_credit, a.status as activity_status, c.id as category_id, c.name as category_name
       FROM activity_registrations ar
       JOIN activities a ON ar.activity_id = a.id
       LEFT JOIN activity_categories c ON a.category_id = c.id
@@ -52,10 +53,10 @@ router.get('/dashboard', requireAuth, async (req, res) => {
     }
 
     const [upcoming] = await pool.query(`
-      SELECT a.*, c.name as category_name
+      SELECT a.*, c.id as category_id, c.name as category_name
       FROM activities a
       LEFT JOIN activity_categories c ON a.category_id = c.id
-      WHERE a.status = 'open' AND a.date >= CURDATE()
+      WHERE a.status = 'open' AND COALESCE(a.end_date, a.date) >= CURDATE()
       ORDER BY a.date ASC LIMIT 5`);
 
     res.json({

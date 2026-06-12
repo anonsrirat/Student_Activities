@@ -16,48 +16,55 @@
           <a href="/notifications" class="notif-btn" id="notif-btn" title="การแจ้งเตือน"></a>
         </div>
       </header>
-      <main class="content">
-        <div class="page-header">
+      <main class="content student-dashboard">
+        <section class="student-hero">
           <div>
             <h1 id="greeting">สวัสดี!</h1>
-            <p>ภาพรวมกิจกรรมและความคืบหน้าของคุณ</p>
+            <p id="hero-summary">กำลังตรวจสอบความคืบหน้ากิจกรรมของคุณ</p>
           </div>
-          <a href="/activities" class="btn btn-primary" id="new-btn">สมัครกิจกรรมใหม่</a>
+          <div class="hero-actions">
+            <a href="/activities" class="btn btn-primary" id="new-btn">สมัครกิจกรรมใหม่</a>
+            <a href="/my-activities" class="btn btn-outline" id="my-btn">กิจกรรมของฉัน</a>
+          </div>
+        </section>
+
+        <section class="next-step-card" id="next-step">
+          <div class="next-step-icon" data-icon="info"></div>
+          <div>
+            <h2>สิ่งที่ควรทำตอนนี้</h2>
+            <p>กำลังโหลดคำแนะนำ...</p>
+          </div>
+        </section>
+
+        <div class="stats-grid dashboard-stats" id="stats-grid">
+          <div class="stat-card"><div class="stat-icon green" data-icon="clock"></div><div class="stat-info"><div class="stat-value" id="stat-hours">-</div><div class="stat-label">ชั่วโมงที่ยืนยันแล้ว</div></div></div>
+          <div class="stat-card"><div class="stat-icon blue" data-icon="check-circle"></div><div class="stat-info"><div class="stat-value" id="stat-attended">-</div><div class="stat-label">กิจกรรมที่ผ่านแล้ว</div></div></div>
+          <div class="stat-card"><div class="stat-icon yellow" data-icon="edit"></div><div class="stat-info"><div class="stat-value" id="stat-pending">-</div><div class="stat-label">กิจกรรมที่ยังต้องติดตาม</div></div></div>
+          <div class="stat-card"><div class="stat-icon red" data-icon="chart-bar"></div><div class="stat-info"><div class="stat-value" id="stat-criteria">-</div><div class="stat-label">หมวดที่ครบเกณฑ์</div></div></div>
         </div>
 
-        <!-- Stat Cards -->
-        <div class="stats-grid" id="stats-grid">
-          <div class="stat-card"><div class="stat-icon blue" data-icon="calendar"></div><div class="stat-info"><div class="stat-value" id="stat-attended">-</div><div class="stat-label">กิจกรรมที่เข้าร่วม</div></div></div>
-          <div class="stat-card"><div class="stat-icon green" data-icon="clock"></div><div class="stat-info"><div class="stat-value" id="stat-hours">-</div><div class="stat-label">ชั่วโมงสะสม</div></div></div>
-          <div class="stat-card"><div class="stat-icon yellow" data-icon="edit"></div><div class="stat-info"><div class="stat-value" id="stat-pending">-</div><div class="stat-label">รอการยืนยัน</div></div></div>
-          <div class="stat-card"><div class="stat-icon red" data-icon="check-circle"></div><div class="stat-info"><div class="stat-value" id="stat-criteria">-</div><div class="stat-label">เกณฑ์ที่ผ่านแล้ว</div></div></div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;" id="main-grid">
-          <!-- Criteria Progress -->
-          <div class="card">
-            <div class="card-header"><h3>ความคืบหน้าตามเกณฑ์</h3><a href="/criteria" class="btn btn-outline btn-sm">ดูทั้งหมด</a></div>
+        <div class="dashboard-grid">
+          <section class="card">
+            <div class="card-header"><h3>เกณฑ์กิจกรรมของฉัน</h3><a href="/criteria" class="btn btn-outline btn-sm">ดูรายละเอียด</a></div>
             <div class="card-body" id="criteria-list">
               <div class="empty-state"><p>กำลังโหลด...</p></div>
             </div>
-          </div>
+          </section>
 
-          <!-- Upcoming Activities -->
-          <div class="card">
-            <div class="card-header"><h3>กิจกรรมที่จะมาถึง</h3><a href="/activities" class="btn btn-outline btn-sm">ดูทั้งหมด</a></div>
+          <section class="card">
+            <div class="card-header"><h3>กิจกรรมที่สมัครได้ใกล้ ๆ นี้</h3><a href="/activities" class="btn btn-outline btn-sm">ดูกิจกรรมทั้งหมด</a></div>
             <div class="card-body" id="upcoming-list">
               <div class="empty-state"><p>กำลังโหลด...</p></div>
             </div>
-          </div>
+          </section>
         </div>
 
-        <!-- My Recent Activities -->
-        <div class="card">
+        <section class="card">
           <div class="card-header"><h3>กิจกรรมล่าสุดของฉัน</h3><a href="/my-activities" class="btn btn-outline btn-sm">ดูทั้งหมด</a></div>
           <div id="my-activities-wrap">
             <div class="empty-state"><p>กำลังโหลด...</p></div>
           </div>
-        </div>
+        </section>
       </main>
     </div>
   </div>
@@ -66,10 +73,43 @@
   <script src="/shared/datepicker.js"></script>
   <script src="/shared/app.js"></script>
   <script>
+    function renderNextStep(data, remainingHours, passed, totalCriteria) {
+      const box = document.getElementById('next-step');
+      let iconName = 'info';
+      let title = 'เริ่มจากเลือกกิจกรรมที่สนใจ';
+      let msg = 'ยังไม่มีกิจกรรมที่ต้องติดตามตอนนี้ ลองดูกิจกรรมที่เปิดรับสมัครและเลือกกิจกรรมที่ตรงกับเวลาของคุณ';
+      let action = '<a href="/activities" class="btn btn-primary btn-sm">ดูกิจกรรมที่สมัครได้</a>';
+
+      if (data.pendingCount > 0) {
+        iconName = 'edit';
+        title = 'มีกิจกรรมที่ยังต้องติดตาม';
+        msg = `คุณมีกิจกรรม ${data.pendingCount} รายการที่ยังไม่ได้ยืนยันผล อย่าลืมเข้าร่วมและยื่นหลักฐานหลังจบกิจกรรม`;
+        action = '<a href="/my-activities" class="btn btn-primary btn-sm">ดูรายการของฉัน</a>';
+      } else if (remainingHours <= 0 && passed === totalCriteria && totalCriteria > 0) {
+        iconName = 'check-circle';
+        title = 'ความคืบหน้าดีมาก';
+        msg = 'ชั่วโมงและหมวดกิจกรรมครบตามเกณฑ์แล้ว ตรวจสอบรายการของฉันได้เมื่อต้องการดูประวัติ';
+        action = '<a href="/my-activities" class="btn btn-outline btn-sm">ดูประวัติกิจกรรม</a>';
+      } else if (data.upcomingActivities.length) {
+        iconName = 'calendar';
+        title = 'มีกิจกรรมที่สมัครได้เร็ว ๆ นี้';
+        msg = `ยังขาดประมาณ ${Math.max(0, remainingHours).toFixed(1)} ชั่วโมง เลือกกิจกรรมจากรายการแนะนำด้านขวาได้เลย`;
+      }
+
+      box.innerHTML = `
+        <div class="next-step-icon">${icon(iconName, { size: 24 })}</div>
+        <div class="next-step-copy">
+          <h2>${title}</h2>
+          <p>${msg}</p>
+        </div>
+        <div class="next-step-action">${action}</div>`;
+    }
+
     (async () => {
       // Inflate data-icon placeholders + button + back
       document.querySelectorAll('[data-icon]').forEach(el => el.innerHTML = icon(el.dataset.icon, { size: 24 }));
       document.getElementById('new-btn').innerHTML = `${icon('plus', { size: 16 })} สมัครกิจกรรมใหม่`;
+      document.getElementById('my-btn').innerHTML = `${icon('check-square', { size: 16 })} กิจกรรมของฉัน`;
 
       const user = await initLayout({ activePage: '/dashboard' });
       if (!user) return;
@@ -84,6 +124,13 @@
         document.getElementById('stat-pending').textContent = data.pendingCount;
         const passed = data.categoryProgress.filter(c => c.passed).length;
         document.getElementById('stat-criteria').textContent = `${passed}/${data.categoryProgress.length}`;
+        const totalRequired = data.categoryProgress.reduce((sum, c) => sum + Number(c.min_hours || 0), 0);
+        const totalEarnedForCriteria = data.categoryProgress.reduce((sum, c) => sum + Math.min(Number(c.earned_hours || 0), Number(c.min_hours || 0)), 0);
+        const remainingHours = Math.max(0, totalRequired - totalEarnedForCriteria);
+        document.getElementById('hero-summary').textContent = remainingHours > 0
+          ? `คุณยังต้องเก็บอีกประมาณ ${remainingHours.toFixed(1)} ชั่วโมง เพื่อให้ครบทุกหมวดกิจกรรม`
+          : 'คุณเก็บชั่วโมงครบตามเกณฑ์รวมแล้ว ตรวจสอบแต่ละหมวดด้านล่างได้เลย';
+        renderNextStep(data, remainingHours, passed, data.categoryProgress.length);
 
         // Criteria progress
         const criteriaEl = document.getElementById('criteria-list');
@@ -91,16 +138,17 @@
           criteriaEl.innerHTML = data.categoryProgress.map(cat => {
             const pct = cat.min_hours > 0 ? Math.min(100, (cat.earned_hours / cat.min_hours) * 100) : 100;
             const barClass = pct >= 100 ? 'done' : pct > 0 ? 'partial' : 'none';
+            const remaining = Math.max(0, cat.min_hours - cat.earned_hours);
             return `
-              <div class="criteria-card mb-3">
+              <div class="criteria-card criteria-card-${categoryThemeKey(cat)} mb-3">
                 <div class="criteria-header">
-                  <span class="cat-name">${cat.name}</span>
+                  ${categoryBadge(cat)}
                   <span class="criteria-hours">${cat.earned_hours.toFixed(1)} / ${cat.min_hours} ชม.</span>
                 </div>
                 <div class="criteria-bar">
                   <div class="progress"><div class="progress-bar ${barClass}" style="width:${pct}%"></div></div>
                 </div>
-                <span class="criteria-status ${cat.passed ? 'pass' : 'fail'}">${cat.passed ? icon('check', { size: 14 }) + ' ผ่านเกณฑ์' : icon('x', { size: 14 }) + ' ยังไม่ผ่าน'}</span>
+                <span class="criteria-status ${cat.passed ? 'pass' : 'fail'}">${cat.passed ? icon('check', { size: 14 }) + ' ครบหมวดนี้แล้ว' : `ยังขาด ${remaining.toFixed(1)} ชม.`}</span>
               </div>`;
           }).join('');
         } else {
@@ -111,18 +159,16 @@
         const upEl = document.getElementById('upcoming-list');
         if (data.upcomingActivities.length) {
           upEl.innerHTML = data.upcomingActivities.map(a => `
-            <a href="/activity-detail?id=${a.id}" style="text-decoration:none;color:inherit">
-              <div class="notif-item" style="cursor:pointer">
-                <div class="notif-dot"></div>
-                <div class="notif-content">
-                  <div class="notif-title">${a.title}</div>
-                  <div class="notif-msg">${fmtDate(a.date)} ${a.start_time ? '· ' + a.start_time : ''} ${a.location ? '· ' + a.location : ''}</div>
-                  <div class="notif-time">${a.hours_credit} ชม. · ${a.category_name || '-'}</div>
-                </div>
+            <a href="/activity-detail?id=${a.id}" class="upcoming-card upcoming-${categoryThemeKey(a)}">
+              <div>
+                <div class="upcoming-title">${a.title}</div>
+                <div class="upcoming-meta">${activityScheduleLabel(a)}</div>
+                <div class="upcoming-meta">${a.location || 'ยังไม่ระบุสถานที่'} · ${a.hours_credit} ชม.</div>
               </div>
+              ${categoryBadge(a)}
             </a>`).join('');
         } else {
-          upEl.innerHTML = '<div class="empty-state" style="padding:24px"><p>ไม่มีกิจกรรมที่จะมาถึง</p></div>';
+          upEl.innerHTML = '<div class="empty-state" style="padding:24px"><p>ยังไม่มีกิจกรรมที่เปิดรับในช่วงนี้</p><a href="/calendar" class="btn btn-outline btn-sm mt-3">เปิดปฏิทินกิจกรรม</a></div>';
         }
 
         // My recent activities
@@ -136,8 +182,8 @@
                 ${recent.map(r => `
                   <tr>
                     <td><a href="/activity-detail?id=${r.activity_id}">${r.title}</a></td>
-                    <td>${fmtDate(r.date)}</td>
-                    <td>${r.category_name || '-'}</td>
+                    <td>${activityDateLabel(r)}</td>
+                    <td>${categoryBadge(r) || '-'}</td>
                     <td>${r.hours_credit} ชม.</td>
                     <td>${badgeStatus(r.status)}</td>
                   </tr>`).join('')}

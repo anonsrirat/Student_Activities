@@ -60,8 +60,8 @@
             ${data.map(r => `
               <tr>
                 <td><a href="/activity-detail?id=${r.activity_id}" class="font-semibold">${r.title}</a></td>
-                <td>${fmtDate(r.date)}</td>
-                <td>${r.category_name || '-'}</td>
+                <td>${activityDateLabel(r)}</td>
+                <td>${categoryBadge(r) || '-'}</td>
                 <td>${r.hours_credit} ชม.</td>
                 <td>${badgeStatus(r.status)}</td>
                 <td>

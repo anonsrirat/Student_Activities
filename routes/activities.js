@@ -18,8 +18,8 @@ router.get('/', requireAuth, async (req, res) => {
     }
     if (category) { where.push('a.category_id = ?'); params.push(category); }
     if (status) { where.push('a.status = ?'); params.push(status); }
-    if (date) { where.push('a.date = ?'); params.push(date); }
-    if (from) { where.push('a.date >= ?'); params.push(from); }
+    if (date) { where.push('a.date <= ? AND COALESCE(a.end_date, a.date) >= ?'); params.push(date, date); }
+    if (from) { where.push('COALESCE(a.end_date, a.date) >= ?'); params.push(from); }
     if (to) { where.push('a.date <= ?'); params.push(to); }
 
     const whereStr = where.join(' AND ');
@@ -60,13 +60,24 @@ router.get('/:id', requireAuth, async (req, res) => {
 
 router.post('/', requireAuth, requireRole('staff'), async (req, res) => {
   try {
-    const { title, description, category_id, date, start_time, end_time, location, capacity, hours_credit, status } = req.body;
+    const {
+      title, description, category_id, date, end_date, start_time, end_time,
+      registration_start_at, registration_end_at, location, capacity, hours_credit, status
+    } = req.body;
     if (!title || !date) return res.status(400).json({ error: 'กรุณากรอกชื่อและวันที่กิจกรรม' });
+    if (end_date && end_date < date) return res.status(400).json({ error: 'วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่มกิจกรรม' });
+    if (registration_start_at && registration_end_at && registration_end_at < registration_start_at) {
+      return res.status(400).json({ error: 'เวลาปิดรับสมัครต้องไม่ก่อนเวลาเปิดรับสมัคร' });
+    }
     const [result] = await pool.query(`
-      INSERT INTO activities (title, description, category_id, date, start_time, end_time, location, capacity, hours_credit, status, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [title, description || null, category_id || null, date, start_time || null, end_time || null,
-       location || null, parseInt(capacity) || 0, parseFloat(hours_credit) || 0, status || 'open', req.user.id]);
+      INSERT INTO activities (
+        title, description, category_id, date, end_date, start_time, end_time,
+        registration_start_at, registration_end_at, location, capacity, hours_credit, status, created_by
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [title, description || null, category_id || null, date, end_date || null, start_time || null, end_time || null,
+       registration_start_at || null, registration_end_at || null, location || null,
+       parseInt(capacity) || 0, parseFloat(hours_credit) || 0, status || 'open', req.user.id]);
     const [rows] = await pool.query('SELECT * FROM activities WHERE id = ?', [result.insertId]);
     res.status(201).json(rows[0]);
   } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
@@ -74,14 +85,23 @@ router.post('/', requireAuth, requireRole('staff'), async (req, res) => {
 
 router.put('/:id', requireAuth, requireRole('staff'), async (req, res) => {
   try {
-    const { title, description, category_id, date, start_time, end_time, location, capacity, hours_credit, status } = req.body;
+    const {
+      title, description, category_id, date, end_date, start_time, end_time,
+      registration_start_at, registration_end_at, location, capacity, hours_credit, status
+    } = req.body;
     const [existing] = await pool.query('SELECT id FROM activities WHERE id = ?', [req.params.id]);
     if (!existing.length) return res.status(404).json({ error: 'ไม่พบกิจกรรม' });
+    if (!title || !date) return res.status(400).json({ error: 'กรุณากรอกชื่อและวันที่กิจกรรม' });
+    if (end_date && end_date < date) return res.status(400).json({ error: 'วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่มกิจกรรม' });
+    if (registration_start_at && registration_end_at && registration_end_at < registration_start_at) {
+      return res.status(400).json({ error: 'เวลาปิดรับสมัครต้องไม่ก่อนเวลาเปิดรับสมัคร' });
+    }
     await pool.query(`
-      UPDATE activities SET title=?, description=?, category_id=?, date=?, start_time=?, end_time=?,
-        location=?, capacity=?, hours_credit=?, status=? WHERE id=?`,
-      [title, description || null, category_id || null, date, start_time || null, end_time || null,
-       location || null, parseInt(capacity) || 0, parseFloat(hours_credit) || 0, status || 'open', req.params.id]);
+      UPDATE activities SET title=?, description=?, category_id=?, date=?, end_date=?, start_time=?, end_time=?,
+        registration_start_at=?, registration_end_at=?, location=?, capacity=?, hours_credit=?, status=? WHERE id=?`,
+      [title, description || null, category_id || null, date, end_date || null, start_time || null, end_time || null,
+       registration_start_at || null, registration_end_at || null, location || null,
+       parseInt(capacity) || 0, parseFloat(hours_credit) || 0, status || 'open', req.params.id]);
     const [rows] = await pool.query('SELECT * FROM activities WHERE id = ?', [req.params.id]);
     res.json(rows[0]);
   } catch (e) { console.error(e); res.status(500).json({ error: 'เกิดข้อผิดพลาด' }); }
@@ -97,10 +117,16 @@ router.delete('/:id', requireAuth, requireRole('staff'), async (req, res) => {
 
 router.post('/:id/register', requireAuth, requireRole('student'), async (req, res) => {
   try {
-    const [acts] = await pool.query('SELECT * FROM activities WHERE id = ?', [req.params.id]);
+    const [acts] = await pool.query(`
+      SELECT *,
+        registration_start_at IS NOT NULL AND registration_start_at > NOW() as registration_not_started,
+        registration_end_at IS NOT NULL AND registration_end_at < NOW() as registration_ended
+      FROM activities WHERE id = ?`, [req.params.id]);
     if (!acts.length) return res.status(404).json({ error: 'ไม่พบกิจกรรม' });
     const activity = acts[0];
     if (activity.status !== 'open') return res.status(400).json({ error: 'กิจกรรมปิดรับสมัครแล้ว' });
+    if (activity.registration_not_started) return res.status(400).json({ error: 'กิจกรรมนี้ยังไม่เปิดรับสมัคร' });
+    if (activity.registration_ended) return res.status(400).json({ error: 'หมดเวลารับสมัครกิจกรรมนี้แล้ว' });
 
     const [regs] = await pool.query('SELECT COUNT(*) as c FROM activity_registrations WHERE activity_id = ?', [req.params.id]);
     if (activity.capacity > 0 && regs[0].c >= activity.capacity) return res.status(400).json({ error: 'กิจกรรมเต็มแล้ว' });

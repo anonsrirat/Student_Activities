@@ -43,7 +43,8 @@
 
     function render() {
       const full = activity.capacity > 0 && activity.registered_count >= activity.capacity;
-      const canRegister = activity.status === 'open' && !activity.is_registered && !full;
+      const regState = registrationState(activity);
+      const canRegister = regState.ok && !activity.is_registered && !full;
       const isStaff = currentUser?.role === 'staff';
 
       document.getElementById('content').innerHTML = `
@@ -54,15 +55,16 @@
                 <h1 style="font-size:1.4rem;font-weight:700">${activity.title}</h1>
                 ${badgeStatus(activity.status)}
               </div>
-              ${activity.category_name ? `<span class="badge badge-student mb-3">${activity.category_name}</span>` : ''}
+              <div class="mb-3">${categoryBadge(activity)}</div>
 
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0">
-                <div class="meta-block">${icon('calendar', { size: 20 })}<div><div class="text-sm text-muted">วันที่</div><div class="font-semibold">${fmtDate(activity.date)}</div></div></div>
-                <div class="meta-block">${icon('clock', { size: 20 })}<div><div class="text-sm text-muted">เวลา</div><div class="font-semibold">${activity.start_time || '-'}${activity.end_time ? ' – ' + activity.end_time : ''}</div></div></div>
+                <div class="meta-block">${icon('calendar', { size: 20 })}<div><div class="text-sm text-muted">วันที่</div><div class="font-semibold">${activityDateLabel(activity)}</div></div></div>
+                <div class="meta-block">${icon('clock', { size: 20 })}<div><div class="text-sm text-muted">เวลา</div><div class="font-semibold">${activityTimeLabel(activity)}</div></div></div>
                 <div class="meta-block">${icon('map-pin', { size: 20 })}<div><div class="text-sm text-muted">สถานที่</div><div class="font-semibold">${activity.location || '-'}</div></div></div>
-                <div class="meta-block">${icon('clock', { size: 20 })}<div><div class="text-sm text-muted">ชั่วโมงที่ได้รับ</div><div class="font-semibold">${activity.hours_credit} ชั่วโมง</div></div></div>
+                <div class="meta-block">${icon('chart-bar', { size: 20 })}<div><div class="text-sm text-muted">ชั่วโมงที่ได้รับ</div><div class="font-semibold">${activity.hours_credit} ชั่วโมง</div></div></div>
                 <div class="meta-block">${icon('users', { size: 20 })}<div><div class="text-sm text-muted">ผู้ลงทะเบียน</div><div class="font-semibold">${activity.registered_count}${activity.capacity > 0 ? ' / ' + activity.capacity + ' คน' : ' คน'}</div></div></div>
                 <div class="meta-block">${icon('user', { size: 20 })}<div><div class="text-sm text-muted">จัดโดย</div><div class="font-semibold">${activity.creator_name || 'เจ้าหน้าที่'}</div></div></div>
+                <div class="meta-block" style="grid-column:1/-1">${icon('info', { size: 20 })}<div><div class="text-sm text-muted">ช่วงรับสมัคร</div><div class="font-semibold">${registrationWindowText(activity)}</div></div></div>
               </div>
 
               ${activity.description ? `<div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px"><h3 class="font-semibold mb-2">รายละเอียด</h3><p style="line-height:1.7;color:var(--text-muted)">${activity.description.replace(/\n/g,'<br>')}</p></div>` : ''}
@@ -74,7 +76,7 @@
                      <a href="/submit-evidence?id=${id}" class="btn btn-outline">ยื่นหลักฐาน</a>`
                   : !isStaff && canRegister
                     ? `<button class="btn btn-primary" onclick="register()">ลงทะเบียนเข้าร่วม</button>`
-                    : !isStaff && full ? `<div class="badge badge-closed" style="padding:8px 16px">กิจกรรมเต็มแล้ว</div>` : ''}
+                    : !isStaff ? `<div class="badge badge-closed" style="padding:8px 16px">${full ? 'กิจกรรมเต็มแล้ว' : regState.label}</div>` : ''}
               </div>
             </div>
           </div>

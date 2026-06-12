@@ -11,7 +11,7 @@ const pool = mysql.createPool({
   queueLimit: 0,
   charset: 'utf8mb4',
   timezone: '+07:00',
-  dateStrings: ['DATE']
+  dateStrings: ['DATE', 'DATETIME']
 });
 
 const SCHEMA = `
@@ -40,8 +40,11 @@ const SCHEMA = `
     description TEXT,
     category_id INT,
     date DATE NOT NULL,
+    end_date DATE NULL,
     start_time TIME,
     end_time TIME,
+    registration_start_at DATETIME NULL,
+    registration_end_at DATETIME NULL,
     location VARCHAR(255),
     capacity INT DEFAULT 0,
     hours_credit DECIMAL(5,1) DEFAULT 0,
@@ -52,6 +55,7 @@ const SCHEMA = `
     FOREIGN KEY (category_id) REFERENCES activity_categories(id) ON DELETE SET NULL,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_date (date),
+    INDEX idx_date_range (date, end_date),
     INDEX idx_status (status)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -98,11 +102,20 @@ const SCHEMA = `
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 `;
 
+async function ensureColumn(conn, table, column, definition) {
+  const [cols] = await conn.query(`SHOW COLUMNS FROM \`${table}\` LIKE ?`, [column]);
+  if (!cols.length) await conn.query(`ALTER TABLE \`${table}\` ADD COLUMN ${definition}`);
+}
+
 async function init() {
   const conn = await pool.getConnection();
   try {
     const statements = SCHEMA.split(';').map(s => s.trim()).filter(Boolean);
     for (const stmt of statements) await conn.query(stmt);
+
+    await ensureColumn(conn, 'activities', 'end_date', 'end_date DATE NULL AFTER date');
+    await ensureColumn(conn, 'activities', 'registration_start_at', 'registration_start_at DATETIME NULL AFTER end_time');
+    await ensureColumn(conn, 'activities', 'registration_end_at', 'registration_end_at DATETIME NULL AFTER registration_start_at');
 
     const [cats] = await conn.query('SELECT COUNT(*) as c FROM activity_categories');
     if (cats[0].c === 0) {

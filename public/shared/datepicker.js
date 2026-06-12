@@ -46,19 +46,21 @@ function initDatePicker(input) {
   function open() {
     panel = document.createElement('div');
     panel.className = 'dp-panel';
+    panel.addEventListener('click', e => e.stopPropagation());
+    panel.addEventListener('pointerdown', e => e.stopPropagation());
     render();
     document.body.appendChild(panel);
     positionPanel();
-    setTimeout(() => document.addEventListener('click', outsideClick), 0);
+    setTimeout(() => document.addEventListener('pointerdown', outsideClick), 0);
     window.addEventListener('resize', positionPanel);
   }
   function close() {
     if (!panel) return;
     panel.remove(); panel = null;
-    document.removeEventListener('click', outsideClick);
+    document.removeEventListener('pointerdown', outsideClick);
     window.removeEventListener('resize', positionPanel);
   }
-  function outsideClick(e) { if (panel && !panel.contains(e.target) && e.target !== display) close(); }
+  function outsideClick(e) { if (panel && !panel.contains(e.target) && !display.contains(e.target)) close(); }
   function positionPanel() {
     if (!panel) return;
     const r = display.getBoundingClientRect();
@@ -161,19 +163,21 @@ function initTimePicker(input) {
   function open() {
     panel = document.createElement('div');
     panel.className = 'dp-panel tp-panel';
+    panel.addEventListener('click', e => e.stopPropagation());
+    panel.addEventListener('pointerdown', e => e.stopPropagation());
     render();
     document.body.appendChild(panel);
     positionPanel();
-    setTimeout(() => document.addEventListener('click', outsideClick), 0);
+    setTimeout(() => document.addEventListener('pointerdown', outsideClick), 0);
     window.addEventListener('resize', positionPanel);
   }
   function close() {
     if (!panel) return;
     panel.remove(); panel = null;
-    document.removeEventListener('click', outsideClick);
+    document.removeEventListener('pointerdown', outsideClick);
     window.removeEventListener('resize', positionPanel);
   }
-  function outsideClick(e) { if (panel && !panel.contains(e.target) && e.target !== display) close(); }
+  function outsideClick(e) { if (panel && !panel.contains(e.target) && !display.contains(e.target)) close(); }
   function positionPanel() {
     if (!panel) return;
     const r = display.getBoundingClientRect();
