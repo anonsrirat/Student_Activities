@@ -199,6 +199,7 @@ const studentNav = [
   { href: '/calendar', icon: 'calendar-check', label: 'ปฏิทินกิจกรรม' },
   { href: '/my-activities', icon: 'check-square', label: 'กิจกรรมของฉัน' },
   { href: '/criteria', icon: 'chart-bar', label: 'เกณฑ์กิจกรรม' },
+  { href: '/manual', icon: 'info', label: 'คู่มือการใช้งาน' },
 ];
 const staffNav = [
   { href: '/staff/dashboard', icon: 'dashboard', label: 'แดชบอร์ด' },
@@ -208,6 +209,7 @@ const staffNav = [
   { href: '/staff/reports', icon: 'chart', label: 'รายงาน' },
   { href: '/staff/criteria', icon: 'clipboard', label: 'จัดการเกณฑ์' },
   { href: '/staff/users', icon: 'users', label: 'จัดการผู้ใช้' },
+  { href: '/staff/manual', icon: 'info', label: 'คู่มือการใช้งาน' },
 ];
 
 // ===== User Cache (sessionStorage, 5 min TTL) =====

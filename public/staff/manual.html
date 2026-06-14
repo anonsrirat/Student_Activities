@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>คู่มือการใช้งาน (เจ้าหน้าที่) — ระบบกิจกรรมนิสิต TSU</title>
+  <link rel="stylesheet" href="/shared/style.css?v=20260614-1">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-area">
+      <header class="topbar">
+        <span class="topbar-title">คู่มือการใช้งาน (เจ้าหน้าที่)</span>
+        <div class="topbar-actions">
+          <button id="notif-btn" class="btn btn-ghost btn-sm" onclick="toggleNotif(this)"></button>
+        </div>
+      </header>
+      <main class="content">
+        <div class="page-header">
+          <div>
+            <h1>คู่มือการใช้งานสำหรับเจ้าหน้าที่</h1>
+            <p>คู่มือการจัดการระบบกิจกรรมนิสิต มหาวิทยาลัยทักษิณ — ฉบับเจ้าหน้าที่ผู้ดูแลระบบ</p>
+          </div>
+        </div>
+
+        <div class="manual-layout">
+          <!-- Table of Contents -->
+          <aside class="manual-toc" id="toc">
+            <h4>สารบัญ</h4>
+            <a class="toc-item" href="#sec-setup"><span class="toc-num">1</span>ตั้งค่าบัญชีเจ้าหน้าที่</a>
+            <a class="toc-item" href="#sec-dashboard"><span class="toc-num">2</span>แดชบอร์ดเจ้าหน้าที่</a>
+            <a class="toc-item" href="#sec-activities"><span class="toc-num">3</span>จัดการกิจกรรม</a>
+            <a class="toc-item" href="#sec-evidence"><span class="toc-num">4</span>ตรวจสอบหลักฐาน</a>
+            <a class="toc-item" href="#sec-reports"><span class="toc-num">5</span>รายงานและ Export</a>
+            <a class="toc-item" href="#sec-criteria"><span class="toc-num">6</span>จัดการเกณฑ์กิจกรรม</a>
+            <a class="toc-item" href="#sec-users"><span class="toc-num">7</span>จัดการผู้ใช้</a>
+            <a class="toc-item" href="#sec-calendar"><span class="toc-num">8</span>ปฏิทินกิจกรรม</a>
+            <a class="toc-item" href="#sec-tips"><span class="toc-num">9</span>ข้อควรระวัง</a>
+          </aside>
+
+          <!-- Manual Content -->
+          <div id="manual-content">
+
+            <!-- Section 1: Setup -->
+            <details class="manual-section" id="sec-setup" open>
+              <summary class="manual-section-header">
+                <div class="manual-sec-icon" id="icon-setup"></div>
+                <div class="manual-sec-title">
+                  <h2>การตั้งค่าบัญชีเจ้าหน้าที่ครั้งแรก</h2>
+                  <p>กำหนดสิทธิ์เจ้าหน้าที่ผ่านฐานข้อมูล MySQL</p>
+                </div>
+                <span class="manual-sec-chevron" id="chev-setup"></span>
+              </summary>
+              <div class="manual-section-body" id="body-setup"></div>
+            </details>
+
+            <!-- Section 2: Dashboard -->
+            <details class="manual-section" id="sec-dashboard">
+              <summary class="manual-section-header">
+                <div class="manual-sec-icon" id="icon-dashboard"></div>
+                <div class="manual-sec-title">
+                  <h2>แดชบอร์ดเจ้าหน้าที่</h2>
+                  <p>ภาพรวมระบบ สถิติ และลิงก์ด่วน</p>
+                </div>
+                <span class="manual-sec-chevron" id="chev-dashboard"></span>
+              </summary>
+              <div class="manual-section-body" id="body-dashboard"></div>
+            </details>
+
+            <!-- Section 3: Activities -->
+            <details class="manual-section" id="sec-activities">
+              <summary class="manual-section-header">
+                <div class="manual-sec-icon" id="icon-activities"></div>
+                <div class="manual-sec-title">
+                  <h2>จัดการกิจกรรม</h2>
+                  <p>สร้าง แก้ไข ลบ และเปลี่ยนสถานะกิจกรรม</p>
+                </div>
+                <span class="manual-sec-chevron" id="chev-activities"></span>
+              </summary>
+              <div class="manual-section-body" id="body-activities"></div>
+            </details>
+
+            <!-- Section 4: Evidence -->
+            <details class="manual-section" id="sec-evidence">
+              <summary class="manual-section-header">
+                <div class="manual-sec-icon" id="icon-evidence"></div>
+                <div class="manual-sec-title">
+                  <h2>ตรวจสอบหลักฐานการเข้าร่วม</h2>
+                  <p>อนุมัติหรือปฏิเสธหลักฐานที่นิสิตยื่น</p>
+                </div>
+                <span class="manual-sec-chevron" id="chev-evidence"></span>
+              </summary>
+              <div class="manual-section-body" id="body-evidence"></div>
+            </details>
+
+            <!-- Section 5: Reports -->
+            <details class="manual-section" id="sec-reports">
+              <summary class="manual-section-header">
+                <div class="manual-sec-icon" id="icon-reports"></div>
+                <div class="manual-sec-title">
+                  <h2>รายงานและการ Export ข้อมูล</h2>
+                  <p>ดูสรุปชั่วโมงกิจกรรมและ Export เป็น CSV</p>
+                </div>
+                <span class="manual-sec-chevron" id="chev-reports"></span>
+              </summary>
+              <div class="manual-section-body" id="body-reports"></div>
+            </details>
+
+            <!-- Section 6: Criteria -->
+            <details class="manual-section" id="sec-criteria">
+              <summary class="manual-section-header">
+                <div class="manual-sec-icon" id="icon-criteria"></div>
+                <div class="manual-sec-title">
+                  <h2>จัดการเกณฑ์กิจกรรม</h2>
+                  <p>กำหนดประเภทกิจกรรมและชั่วโมงขั้นต่ำ</p>
+                </div>
+                <span class="manual-sec-chevron" id="chev-criteria"></span>
+              </summary>
+              <div class="manual-section-body" id="body-criteria"></div>
+            </details>
+
+            <!-- Section 7: Users -->
+            <details class="manual-section" id="sec-users">
+              <summary class="manual-section-header">
+                <div class="manual-sec-icon" id="icon-users"></div>
+                <div class="manual-sec-title">
+                  <h2>จัดการผู้ใช้งาน</h2>
+                  <p>ดูรายชื่อนิสิต เปลี่ยน Role และจัดการสิทธิ์</p>
+                </div>
+                <span class="manual-sec-chevron" id="chev-users"></span>
+              </summary>
+              <div class="manual-section-body" id="body-users"></div>
+            </details>
+
+            <!-- Section 8: Calendar -->
+            <details class="manual-section" id="sec-calendar">
+              <summary class="manual-section-header">
+                <div class="manual-sec-icon" id="icon-calendar"></div>
+                <div class="manual-sec-title">
+                  <h2>ปฏิทินกิจกรรม</h2>
+                  <p>ดูภาพรวมกิจกรรมทั้งหมดในรูปแบบปฏิทิน</p>
+                </div>
+                <span class="manual-sec-chevron" id="chev-calendar"></span>
+              </summary>
+              <div class="manual-section-body" id="body-calendar"></div>
+            </details>
+
+            <!-- Section 9: Tips -->
+            <details class="manual-section" id="sec-tips">
+              <summary class="manual-section-header">
+                <div class="manual-sec-icon" id="icon-tips" style="background:var(--warning-light);color:var(--warning)"></div>
+                <div class="manual-sec-title">
+                  <h2>ข้อควรระวังและแนวทางปฏิบัติที่ดี</h2>
+                  <p>สิ่งที่ควรทำและไม่ควรทำในฐานะผู้ดูแลระบบ</p>
+                </div>
+                <span class="manual-sec-chevron" id="chev-tips"></span>
+              </summary>
+              <div class="manual-section-body" id="body-tips"></div>
+            </details>
+
+          </div><!-- /manual-content -->
+        </div><!-- /manual-layout -->
+      </main>
+    </div>
+  </div>
+
+  <!-- Back to Top -->
+  <button class="back-top" id="back-top" title="กลับขึ้นด้านบน"></button>
+
+  <script src="/shared/icons.js?v=20260614-1"></script>
+  <script src="/shared/app.js?v=20260614-1"></script>
+  <script>
+  function setIcon(id, name) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = icon(name, { size: 20 });
+  }
+  function setChev(id) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = icon('chevron-down', { size: 18 });
+  }
+
+  setIcon('icon-setup', 'user-check'); setChev('chev-setup');
+  setIcon('icon-dashboard', 'dashboard'); setChev('chev-dashboard');
+  setIcon('icon-activities', 'calendar'); setChev('chev-activities');
+  setIcon('icon-evidence', 'folder'); setChev('chev-evidence');
+  setIcon('icon-reports', 'chart'); setChev('chev-reports');
+  setIcon('icon-criteria', 'clipboard'); setChev('chev-criteria');
+  setIcon('icon-users', 'users'); setChev('chev-users');
+  setIcon('icon-calendar', 'calendar-check'); setChev('chev-calendar');
+  setIcon('icon-tips', 'alert-triangle'); setChev('chev-tips');
+  document.getElementById('back-top').innerHTML = icon('chevron-up', { size: 20 });
+
+  // ===== Section 1: Setup =====
+  document.getElementById('body-setup').innerHTML = `
+    <div class="warn-box">${icon('alert-triangle',{size:16})}<span>ขั้นตอนนี้ต้องทำโดยผู้ดูแลระบบฐานข้อมูล (DBA) เท่านั้น ไม่สามารถทำผ่านหน้าเว็บได้</span></div>
+    <p style="margin:12px 0 8px;font-size:.88rem;color:var(--text-muted);">บัญชี Google @tsu.ac.th ทุกบัญชีที่ Login จะได้ Role <strong>student</strong> โดยอัตโนมัติ หากต้องการยกระดับเป็น <strong>staff</strong> ให้ดำเนินการดังนี้</p>
+    <ol class="step-list">
+      <li class="step-item"><div class="step-content"><strong>เข้าสู่ระบบ MySQL</strong> ด้วย Credential ที่กำหนดใน <code>.env</code><div class="step-note">เช่น: <code>mysql -u root -p student_activities</code></div></div></li>
+      <li class="step-item"><div class="step-content"><strong>ให้เจ้าหน้าที่เป้าหมาย Login ผ่าน Google ก่อนสักครั้ง</strong> เพื่อให้ระบบสร้าง Record ในตาราง <code>users</code> โดยอัตโนมัติ</div></li>
+      <li class="step-item"><div class="step-content"><strong>รัน SQL</strong> เพื่ออัปเดต Role:
+        <pre style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;margin-top:8px;font-size:.8rem;overflow-x:auto;">UPDATE users SET role = 'staff' WHERE email = 'staff_email@tsu.ac.th';</pre>
+      </div></li>
+      <li class="step-item"><div class="step-content"><strong>ตรวจสอบผล</strong> ด้วย:
+        <pre style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;margin-top:8px;font-size:.8rem;overflow-x:auto;">SELECT id, email, name, role FROM users WHERE role = 'staff';</pre>
+      </div></li>
+      <li class="step-item"><div class="step-content"><strong>เจ้าหน้าที่ Logout และ Login ใหม่</strong> ระบบจะรู้จัก Role staff โดยอัตโนมัติ และพาไปหน้า Staff Dashboard</div></li>
+    </ol>
+    <div class="tip-box">${icon('check-circle',{size:16})}<span>หลังจากมีเจ้าหน้าที่แล้ว สามารถ <strong>เปลี่ยน Role ผ่านหน้าเว็บ</strong> ได้จากเมนู "จัดการผู้ใช้" โดยไม่ต้องใช้ SQL อีก</span></div>`;
+
+  // ===== Section 2: Dashboard =====
+  document.getElementById('body-dashboard').innerHTML = `
+    <p style="margin-bottom:12px;color:var(--text-muted);font-size:.88rem;">แดชบอร์ดแสดงภาพรวมของระบบทั้งหมดในทันที เหมาะสำหรับดูสถานะก่อนเริ่มทำงาน</p>
+    <table class="manual-table">
+      <thead><tr><th>ส่วนประกอบ</th><th>คำอธิบาย</th></tr></thead>
+      <tbody>
+        <tr><td><strong>กิจกรรมทั้งหมด</strong></td><td>จำนวนกิจกรรมในระบบทั้งหมด ทุกสถานะ</td></tr>
+        <tr><td><strong>กิจกรรมเปิดรับสมัคร</strong></td><td>กิจกรรมที่สถานะ "เปิด" และอยู่ในช่วงเวลารับสมัคร</td></tr>
+        <tr><td><strong>หลักฐานรอตรวจ</strong></td><td>จำนวนหลักฐานที่นิสิตยื่นและรอการอนุมัติ ควรตรวจสอบให้ทันเวลา</td></tr>
+        <tr><td><strong>นิสิตทั้งหมด</strong></td><td>จำนวนผู้ใช้ที่มี Role student ในระบบ</td></tr>
+        <tr><td><strong>กิจกรรมล่าสุด</strong></td><td>5 กิจกรรมที่สร้างล่าสุด พร้อมจำนวนผู้สมัครและสถานะ</td></tr>
+        <tr><td><strong>ลิงก์ด่วน</strong></td><td>ปุ่มลัดไปยังหน้าที่ใช้บ่อย เช่น ตรวจหลักฐาน จัดการกิจกรรม</td></tr>
+      </tbody>
+    </table>`;
+
+  // ===== Section 3: Activities =====
+  document.getElementById('body-activities').innerHTML = `
+    <p style="margin-bottom:12px;color:var(--text-muted);font-size:.88rem;">จัดการกิจกรรมทั้งหมดผ่านหน้านี้ ทั้งการสร้าง แก้ไข เปลี่ยนสถานะ และลบ</p>
+
+    <h3 style="font-size:.9rem;font-weight:700;margin:16px 0 8px;">3.1 สร้างกิจกรรมใหม่</h3>
+    <ol class="step-list">
+      <li class="step-item"><div class="step-content"><strong>คลิกปุ่ม</strong> <span class="step-action">${icon('plus',{size:13})} สร้างกิจกรรม</span> ที่มุมขวาบน</div></li>
+      <li class="step-item"><div class="step-content"><strong>กรอกข้อมูลกิจกรรม</strong> ในฟอร์ม:<br>
+        <span style="display:block;margin-top:4px">• <strong>ชื่อกิจกรรม</strong> (จำเป็น) — ชื่อที่ชัดเจนและจำได้ง่าย</span>
+        <span style="display:block">• <strong>หมวดหมู่</strong> (จำเป็น) — เลือกจากที่กำหนดไว้ในเกณฑ์</span>
+        <span style="display:block">• <strong>วันที่จัด</strong> (จำเป็น) — คลิกเพื่อเลือกจาก Calendar ภาษาไทย</span>
+        <span style="display:block">• <strong>วันสิ้นสุด</strong> (ถ้ามี) — สำหรับกิจกรรมที่ใช้เวลาหลายวัน</span>
+        <span style="display:block">• <strong>เวลาเริ่ม / สิ้นสุด</strong> — คลิก +/- เพื่อปรับทีละ 5 นาที</span>
+        <span style="display:block">• <strong>สถานที่</strong> — พิมพ์ชื่อหรือเลือกจากรายการที่มี</span>
+        <span style="display:block">• <strong>จำนวนที่รับ</strong> — 0 หมายถึงไม่จำกัด</span>
+        <span style="display:block">• <strong>ชั่วโมงเครดิต</strong> — ชั่วโมงที่นิสิตจะได้รับเมื่ออนุมัติหลักฐาน</span>
+        <span style="display:block">• <strong>คำอธิบาย</strong> — รายละเอียดเพิ่มเติม</span>
+      </div></li>
+      <li class="step-item"><div class="step-content"><strong>ตั้งช่วงเวลารับสมัคร</strong> (ไม่บังคับ) — ถ้าต้องการควบคุมว่านิสิตสมัครได้ช่วงไหน</div></li>
+      <li class="step-item"><div class="step-content"><strong>คลิก</strong> <span class="step-action">${icon('check',{size:13})} บันทึก</span> เพื่อสร้างกิจกรรม</div></li>
+    </ol>
+
+    <h3 style="font-size:.9rem;font-weight:700;margin:16px 0 8px;">3.2 แก้ไขกิจกรรม</h3>
+    <ol class="step-list">
+      <li class="step-item"><div class="step-content"><strong>ค้นหากิจกรรม</strong> ที่ต้องการแก้ไขจากรายการ</div></li>
+      <li class="step-item"><div class="step-content"><strong>คลิกปุ่ม</strong> <span class="step-action">${icon('edit',{size:13})}</span> ในแถวของกิจกรรมนั้น</div></li>
+      <li class="step-item"><div class="step-content"><strong>แก้ไขข้อมูล</strong> ที่ต้องการในฟอร์ม แล้วคลิก <span class="step-action">บันทึก</span></div></li>
+    </ol>
+
+    <h3 style="font-size:.9rem;font-weight:700;margin:16px 0 8px;">3.3 เปลี่ยนสถานะกิจกรรม</h3>
+    <table class="manual-table">
+      <thead><tr><th>สถานะ</th><th>ความหมาย</th><th>นิสิตสมัครได้?</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge badge-open">เปิดรับสมัคร</span></td><td>กิจกรรมกำลังดำเนินการ รับนิสิตเข้าร่วม</td><td>ได้ (ถ้าอยู่ในช่วงเวลา)</td></tr>
+        <tr><td><span class="badge badge-closed">ปิดรับสมัคร</span></td><td>หยุดรับนิสิตเพิ่ม แต่กิจกรรมยังดำเนินการอยู่</td><td>ไม่ได้</td></tr>
+        <tr><td><span class="badge badge-cancelled">ยกเลิก</span></td><td>กิจกรรมถูกยกเลิก ไม่สามารถแก้ไขกลับได้ง่าย</td><td>ไม่ได้</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size:.9rem;font-weight:700;margin:16px 0 8px;">3.4 ลบกิจกรรม</h3>
+    <div class="warn-box">${icon('alert-triangle',{size:16})}<span>การลบกิจกรรมจะลบ <strong>ข้อมูลการลงทะเบียนและหลักฐานทั้งหมด</strong> ที่เชื่อมกับกิจกรรมนั้น ไม่สามารถกู้คืนได้ ควรเปลี่ยนสถานะเป็น "ยกเลิก" แทน หากมีนิสิตลงทะเบียนแล้ว</span></div>
+    <ol class="step-list">
+      <li class="step-item"><div class="step-content"><strong>คลิกปุ่ม</strong> <span class="step-action">${icon('trash',{size:13})}</span> สีแดงในแถวกิจกรรม</div></li>
+      <li class="step-item"><div class="step-content"><strong>ยืนยัน</strong> ในกล่อง Popup เพื่อยืนยันการลบ</div></li>
+    </ol>`;
+
+  // ===== Section 4: Evidence =====
+  document.getElementById('body-evidence').innerHTML = `
+    <p style="margin-bottom:12px;color:var(--text-muted);font-size:.88rem;">ตรวจสอบและอนุมัติหลักฐานที่นิสิตยื่นเพื่อยืนยันการเข้าร่วมกิจกรรม</p>
+    <ol class="step-list">
+      <li class="step-item"><div class="step-content"><strong>เข้าเมนู</strong> <span class="step-action">${icon('folder',{size:13})} ตรวจหลักฐาน</span> จาก Sidebar</div></li>
+      <li class="step-item"><div class="step-content"><strong>ดูรายการหลักฐาน</strong> ค่าเริ่มต้นกรองเฉพาะ "รอตรวจสอบ" ให้เห็นเฉพาะงานที่รอ<div class="step-note">เปลี่ยน Dropdown เพื่อดูหลักฐาน "ทั้งหมด / อนุมัติ / ปฏิเสธ"</div></div></li>
+      <li class="step-item"><div class="step-content"><strong>คลิก "ดูไฟล์"</strong> เพื่อเปิดไฟล์หลักฐาน (รูปภาพหรือ PDF) ในแท็บใหม่</div></li>
+      <li class="step-item"><div class="step-content"><strong>คลิกปุ่ม "ตรวจสอบ"</strong> เพื่อเปิด Modal การตรวจสอบ</div></li>
+      <li class="step-item"><div class="step-content"><strong>พิมพ์หมายเหตุ</strong> (ถ้ามี) เช่น เหตุผลหากปฏิเสธ</div></li>
+      <li class="step-item"><div class="step-content"><strong>คลิก</strong> <span class="step-action" style="background:#d1fae5;color:#065f46">อนุมัติ</span> หรือ <span class="step-action" style="background:#fee2e2;color:#991b1b">ปฏิเสธ</span></div></li>
+      <li class="step-item"><div class="step-content"><strong>ระบบแจ้งเตือนนิสิตอัตโนมัติ</strong> ผ่านหน้าการแจ้งเตือนในระบบ</div></li>
+    </ol>
+    <div class="tip-box">${icon('check-circle',{size:16})}<span>แนะนำตรวจหลักฐานให้ทันภายใน <strong>3-5 วันทำการ</strong> หลังนิสิตยื่น เพื่อให้ชั่วโมงกิจกรรมถูกนับทันเวลา</span></div>
+    <div class="info-box">${icon('info',{size:16})}<span>เมื่อ <strong>อนุมัติ</strong> หลักฐาน ชั่วโมงกิจกรรมจะถูกนับเข้าเกณฑ์ของนิสิตทันที โดยนับจากชั่วโมงเครดิตที่กำหนดไว้ในกิจกรรม</span></div>`;
+
+  // ===== Section 5: Reports =====
+  document.getElementById('body-reports').innerHTML = `
+    <p style="margin-bottom:12px;color:var(--text-muted);font-size:.88rem;">ดูรายงานสรุปชั่วโมงกิจกรรมของนิสิตทุกคนในระบบ และ Export เป็นไฟล์ CSV</p>
+    <ol class="step-list">
+      <li class="step-item"><div class="step-content"><strong>เข้าเมนู</strong> <span class="step-action">${icon('chart',{size:13})} รายงาน</span> จาก Sidebar</div></li>
+      <li class="step-item"><div class="step-content"><strong>ดูตารางสรุปรายนิสิต</strong> ประกอบด้วย รหัสนิสิต ชื่อ อีเมล จำนวนกิจกรรม ชั่วโมงสะสม และจำนวนรอยืนยัน</div></li>
+      <li class="step-item"><div class="step-content"><strong>เลือกหมวดหมู่ (ไม่บังคับ)</strong> จาก Dropdown "ทุกหมวดหมู่" เพื่อ Export เฉพาะประเภทที่ต้องการ</div></li>
+      <li class="step-item"><div class="step-content"><strong>คลิก</strong> <span class="step-action">${icon('download',{size:13})} Export CSV</span> เพื่อดาวน์โหลดข้อมูล</div></li>
+      <li class="step-item"><div class="step-content"><strong>เปิดไฟล์ CSV</strong> ด้วย Excel หรือ Google Sheets<div class="step-note">ไฟล์ CSV เข้ารหัส UTF-8 BOM เพื่อให้ Excel แสดงภาษาไทยได้ถูกต้อง</div></div></li>
+    </ol>
+    <table class="manual-table" style="margin-top:14px">
+      <thead><tr><th>คอลัมน์ใน CSV</th><th>ความหมาย</th></tr></thead>
+      <tbody>
+        <tr><td>รหัสนิสิต</td><td>Student ID ที่ระบุเมื่อ Login ครั้งแรก</td></tr>
+        <tr><td>ชื่อ-นามสกุล</td><td>ชื่อจาก Google Account</td></tr>
+        <tr><td>อีเมล</td><td>อีเมล @tsu.ac.th</td></tr>
+        <tr><td>กิจกรรมที่เข้าร่วม</td><td>จำนวนกิจกรรมที่มีสถานะ attended</td></tr>
+        <tr><td>ชั่วโมงสะสม</td><td>ชั่วโมงที่หลักฐานได้รับการอนุมัติแล้ว</td></tr>
+        <tr><td>รอยืนยัน</td><td>จำนวนหลักฐานที่ยังรอตรวจ</td></tr>
+      </tbody>
+    </table>`;
+
+  // ===== Section 6: Criteria =====
+  document.getElementById('body-criteria').innerHTML = `
+    <p style="margin-bottom:12px;color:var(--text-muted);font-size:.88rem;">กำหนดประเภทกิจกรรมและชั่วโมงขั้นต่ำที่นิสิตต้องผ่านในแต่ละประเภท</p>
+
+    <h3 style="font-size:.9rem;font-weight:700;margin:0 0 8px;">สร้างเกณฑ์ใหม่</h3>
+    <ol class="step-list">
+      <li class="step-item"><div class="step-content"><strong>เข้าเมนู</strong> <span class="step-action">${icon('clipboard',{size:13})} จัดการเกณฑ์</span> จาก Sidebar</div></li>
+      <li class="step-item"><div class="step-content"><strong>คลิก</strong> <span class="step-action">${icon('plus',{size:13})} เพิ่มเกณฑ์</span></div></li>
+      <li class="step-item"><div class="step-content"><strong>กรอกข้อมูล:</strong><br>
+        <span style="display:block;margin-top:4px">• <strong>ชื่อประเภท</strong> เช่น "กิจกรรมวิชาการ", "กิจกรรมบำเพ็ญประโยชน์"</span>
+        <span style="display:block">• <strong>คำอธิบาย</strong> รายละเอียดเพิ่มเติม (ไม่บังคับ)</span>
+        <span style="display:block">• <strong>ชั่วโมงขั้นต่ำ</strong> จำนวนชั่วโมงที่นิสิตต้องสะสมให้ครบ</span>
+      </div></li>
+      <li class="step-item"><div class="step-content"><strong>คลิก "บันทึก"</strong> เกณฑ์ใหม่จะปรากฏให้นิสิตเห็นทันที</div></li>
+    </ol>
+    <div class="warn-box">${icon('alert-triangle',{size:16})}<span>การ <strong>ลบเกณฑ์</strong> จะทำให้กิจกรรมที่ใช้หมวดหมู่นั้น ไม่ถูกนับเข้าเกณฑ์ใดๆ อีกต่อไป ควรตรวจสอบก่อนลบว่าไม่มีกิจกรรมที่ใช้งานอยู่</span></div>`;
+
+  // ===== Section 7: Users =====
+  document.getElementById('body-users').innerHTML = `
+    <p style="margin-bottom:12px;color:var(--text-muted);font-size:.88rem;">ดูและจัดการรายชื่อผู้ใช้ทุกคนในระบบ ทั้งนิสิตและเจ้าหน้าที่</p>
+    <ol class="step-list">
+      <li class="step-item"><div class="step-content"><strong>เข้าเมนู</strong> <span class="step-action">${icon('users',{size:13})} จัดการผู้ใช้</span> จาก Sidebar</div></li>
+      <li class="step-item"><div class="step-content"><strong>ค้นหาผู้ใช้</strong> โดยพิมพ์ชื่อ อีเมล หรือรหัสนิสิต ในช่องค้นหา</div></li>
+      <li class="step-item"><div class="step-content"><strong>กรองตาม Role</strong> เลือก "นิสิต" หรือ "เจ้าหน้าที่" จาก Dropdown</div></li>
+      <li class="step-item"><div class="step-content"><strong>เปลี่ยน Role</strong> เลือก Dropdown ในคอลัมน์ "เปลี่ยน Role" ของผู้ใช้ที่ต้องการ</div></li>
+      <li class="step-item"><div class="step-content"><strong>ยืนยัน</strong> ใน Popup ที่ปรากฏขึ้น Role จะเปลี่ยนทันที</div></li>
+    </ol>
+    <div class="info-box">${icon('info',{size:16})}<span>เมื่อเปลี่ยน Role เป็น <strong>staff</strong> ผู้ใช้จะต้อง Logout แล้ว Login ใหม่เพื่อให้สิทธิ์มีผล</span></div>
+    <div class="warn-box">${icon('alert-triangle',{size:16})}<span>ระวังการเปลี่ยน Role ผู้ดูแลระบบ (staff) กลับเป็น student จะทำให้เสียสิทธิ์การจัดการทันที</span></div>`;
+
+  // ===== Section 8: Calendar =====
+  document.getElementById('body-calendar').innerHTML = `
+    <p style="margin-bottom:12px;color:var(--text-muted);font-size:.88rem;">ปฏิทินกิจกรรมสำหรับเจ้าหน้าที่ใช้งานเหมือนกับนิสิต แต่เห็นกิจกรรมทุกสถานะ</p>
+    <ol class="step-list">
+      <li class="step-item"><div class="step-content"><strong>เข้าเมนู</strong> <span class="step-action">${icon('calendar-check',{size:13})} ปฏิทินกิจกรรม</span> จาก Sidebar</div></li>
+      <li class="step-item"><div class="step-content"><strong>ดูภาพรวมกิจกรรม</strong> ทุกกิจกรรมในเดือนปัจจุบันจะแสดงใน Grid ปฏิทิน</div></li>
+      <li class="step-item"><div class="step-content"><strong>Chip สีต่างๆ</strong> แยกตามหมวดหมู่ กิจกรรมที่ยกเลิกจะแสดงสีแดง ปิดรับแล้วสีเทา</div></li>
+      <li class="step-item"><div class="step-content"><strong>คลิก Chip กิจกรรม</strong> เพื่อไปดูรายละเอียดและแก้ไข</div></li>
+    </ol>`;
+
+  // ===== Section 9: Tips =====
+  document.getElementById('body-tips').innerHTML = `
+    <h3 style="font-size:.9rem;font-weight:700;margin:0 0 10px;">สิ่งที่ควรทำ</h3>
+    <div class="tip-box">${icon('check-circle',{size:16})}<div><strong>สร้างเกณฑ์กิจกรรมก่อนเพิ่มกิจกรรมเสมอ</strong> — เกณฑ์เป็นหมวดหมู่ที่กิจกรรมต้องอ้างอิง หากไม่มีเกณฑ์ จะเพิ่มกิจกรรมไม่ได้</div></div>
+    <div class="tip-box">${icon('check-circle',{size:16})}<div><strong>ตรวจหลักฐานให้ทันเวลา</strong> — นิสิตรอผลเพื่อนับชั่วโมงกิจกรรม ควรตรวจภายใน 3-5 วันทำการ</div></div>
+    <div class="tip-box">${icon('check-circle',{size:16})}<div><strong>ใช้ "ปิดรับสมัคร" แทน "ยกเลิก"</strong> เมื่อต้องการหยุดรับนิสิตแต่กิจกรรมยังดำเนินการ</div></div>
+    <div class="tip-box">${icon('check-circle',{size:16})}<div><strong>Export CSV ก่อนสิ้นภาคการศึกษา</strong> เพื่อเก็บข้อมูลชั่วโมงกิจกรรมของนิสิตไว้ในรูปแบบที่เปิดได้ด้วย Excel</div></div>
+
+    <h3 style="font-size:.9rem;font-weight:700;margin:16px 0 10px;">สิ่งที่ไม่ควรทำ</h3>
+    <div class="warn-box">${icon('alert-triangle',{size:16})}<div><strong>อย่าลบกิจกรรมที่มีนิสิตลงทะเบียนแล้ว</strong> — ข้อมูลการลงทะเบียนและหลักฐานจะหายทั้งหมด ควรใช้ "ยกเลิก" แทน</div></div>
+    <div class="warn-box">${icon('alert-triangle',{size:16})}<div><strong>อย่าลบเกณฑ์กิจกรรมที่มีกิจกรรมใช้งานอยู่</strong> — จะทำให้ชั่วโมงของนิสิตไม่ถูกนับในหมวดนั้น</div></div>
+    <div class="warn-box">${icon('alert-triangle',{size:16})}<div><strong>อย่าเปลี่ยน Role ตัวเองเป็น student</strong> — จะสูญเสียสิทธิ์เจ้าหน้าที่ทันทีและต้องให้ DBA แก้ใน MySQL</div></div>
+
+    <h3 style="font-size:.9rem;font-weight:700;margin:16px 0 10px;">API Endpoints สำหรับนักพัฒนา</h3>
+    <table class="manual-table">
+      <thead><tr><th>Endpoint</th><th>วิธี</th><th>คำอธิบาย</th></tr></thead>
+      <tbody>
+        <tr><td><code>/api/activities</code></td><td>GET</td><td>รายการกิจกรรม (รองรับ search, category, status, from, to)</td></tr>
+        <tr><td><code>/api/evidence</code></td><td>GET</td><td>รายการหลักฐาน (status filter)</td></tr>
+        <tr><td><code>/api/reports/students</code></td><td>GET</td><td>สรุปชั่วโมงนิสิต (CSV download)</td></tr>
+        <tr><td><code>/api/criteria</code></td><td>GET</td><td>รายการเกณฑ์กิจกรรมทั้งหมด</td></tr>
+        <tr><td><code>/api/stats/dashboard</code></td><td>GET</td><td>สถิติแดชบอร์ด</td></tr>
+        <tr><td><code>/api/users</code></td><td>GET</td><td>รายชื่อผู้ใช้ (role, search filter)</td></tr>
+      </tbody>
+    </table>`;
+
+  // ===== TOC Active on Scroll =====
+  (function setupTOC() {
+    const sections = document.querySelectorAll('.manual-section');
+    const tocItems = document.querySelectorAll('.toc-item');
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = '#' + entry.target.id;
+          tocItems.forEach(a => { a.classList.toggle('active', a.getAttribute('href') === id); });
+        }
+      });
+    }, { rootMargin: '-20% 0px -60% 0px', threshold: 0 });
+    sections.forEach(s => observer.observe(s));
+
+    tocItems.forEach(a => {
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        const target = document.querySelector(a.getAttribute('href'));
+        if (target) { target.open = true; target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      });
+    });
+  })();
+
+  // ===== Back to Top =====
+  const backTop = document.getElementById('back-top');
+  window.addEventListener('scroll', () => { backTop.classList.toggle('visible', window.scrollY > 300); });
+  backTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+  // ===== Init Layout =====
+  (async () => {
+    await initLayout({ activePage: '/staff/manual', requireRole: 'staff' });
+  })();
+  </script>
+</body>
+</html>

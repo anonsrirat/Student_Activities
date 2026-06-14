@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>คู่มือการใช้งาน (นิสิต) — ระบบกิจกรรมนิสิต TSU</title>
+  <link rel="stylesheet" href="/shared/style.css?v=20260614-1">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-area">
+      <header class="topbar">
+        <span class="topbar-title">คู่มือการใช้งาน</span>
+        <div class="topbar-actions">
+          <button id="notif-btn" class="btn btn-ghost btn-sm" onclick="toggleNotif(this)"></button>
+        </div>
+      </header>
+      <main class="content">
+        <div class="page-header">
+          <div>
+            <h1>คู่มือการใช้งานสำหรับนิสิต</h1>
+            <p>วิธีใช้งานระบบจัดการกิจกรรมนิสิต มหาวิทยาลัยทักษิณ ฉบับสมบูรณ์</p>
+          </div>
+        </div>
+
+        <div class="manual-layout">
+          <!-- Table of Contents -->
+          <aside class="manual-toc" id="toc">
+            <h4>สารบัญ</h4>
+            <a class="toc-item" href="#sec-login"><span class="toc-num">1</span>เข้าสู่ระบบ</a>
+            <a class="toc-item" href="#sec-dashboard"><span class="toc-num">2</span>แดชบอร์ด</a>
+            <a class="toc-item" href="#sec-activities"><span class="toc-num">3</span>กิจกรรมทั้งหมด</a>
+            <a class="toc-item" href="#sec-calendar"><span class="toc-num">4</span>ปฏิทินกิจกรรม</a>
+            <a class="toc-item" href="#sec-register"><span class="toc-num">5</span>สมัครเข้าร่วม</a>
+            <a class="toc-item" href="#sec-myact"><span class="toc-num">6</span>กิจกรรมของฉัน</a>
+            <a class="toc-item" href="#sec-evidence"><span class="toc-num">7</span>ยื่นหลักฐาน</a>
+            <a class="toc-item" href="#sec-criteria"><span class="toc-num">8</span>เกณฑ์กิจกรรม</a>
+            <a class="toc-item" href="#sec-notif"><span class="toc-num">9</span>การแจ้งเตือน</a>
+            <a class="toc-item" href="#sec-logout"><span class="toc-num">10</span>ออกจากระบบ</a>
+          </aside>
+
+          <!-- Manual Content -->
+          <div id="manual-content">
+
+            <!-- Section 1: Login -->
+            <details class="manual-section" id="sec-login" open>
+              <summary class="manual-section-header">
+                <div class="manual-sec-icon" id="icon-login"></div>
+                <div class="manual-sec-title">
+                  <h2>การเข้าสู่ระบบ</h2>
+                  <p>เข้าสู่ระบบด้วย Google Account อีเมล @tsu.ac.th</p>
+                </div>
+                <span class="manual-sec-chevron" id="chev-login"></span>
+              </summary>
+              <div class="manual-section-body">
+                <div class="info-box" id="info-login"></div>
+                <ol class="step-list" id="steps-login"></ol>
+                <div class="warn-box" id="warn-login"></div>
+              </div>
+            </details>
+
+            <!-- Section 2: Dashboard -->
+            <details class="manual-section" id="sec-dashboard">
+              <summary class="manual-section-header">
+                <div class="manual-sec-icon" id="icon-dashboard"></div>
+                <div class="manual-sec-title">
+                  <h2>แดชบอร์ด</h2>
+                  <p>ภาพรวมชั่วโมงกิจกรรมและความคืบหน้า</p>
+                </div>
+                <span class="manual-sec-chevron" id="chev-dashboard"></span>
+              </summary>
+              <div class="manual-section-body" id="body-dashboard"></div>
+            </details>
+
+            <!-- Section 3: Activities -->
+            <details class="manual-section" id="sec-activities">
+              <summary class="manual-section-header">
+                <div class="manual-sec-icon" id="icon-activities"></div>
+                <div class="manual-sec-title">
+                  <h2>กิจกรรมทั้งหมด</h2>
+                  <p>ค้นหา กรอง และดูรายละเอียดกิจกรรม</p>
+                </div>
+                <span class="manual-sec-chevron" id="chev-activities"></span>
+              </summary>
+              <div class="manual-section-body" id="body-activities"></div>
+            </details>
+
+            <!-- Section 4: Calendar -->
+            <details class="manual-section" id="sec-calendar">
+              <summary class="manual-section-header">
+                <div class="manual-sec-icon" id="icon-calendar"></div>
+                <div class="manual-sec-title">
+                  <h2>ปฏิทินกิจกรรม</h2>
+                  <p>ดูกิจกรรมในรูปแบบปฏิทินรายเดือน</p>
+                </div>
+                <span class="manual-sec-chevron" id="chev-calendar"></span>
+              </summary>
+              <div class="manual-section-body" id="body-calendar"></div>
+            </details>
+
+            <!-- Section 5: Register -->
+            <details class="manual-section" id="sec-register">
+              <summary class="manual-section-header">
+                <div class="manual-sec-icon" id="icon-register"></div>
+                <div class="manual-sec-title">
+                  <h2>สมัครเข้าร่วมกิจกรรม</h2>
+                  <p>ขั้นตอนลงทะเบียนเข้าร่วมกิจกรรมที่สนใจ</p>
+                </div>
+                <span class="manual-sec-chevron" id="chev-register"></span>
+              </summary>
+              <div class="manual-section-body" id="body-register"></div>
+            </details>
+
+            <!-- Section 6: My Activities -->
+            <details class="manual-section" id="sec-myact">
+              <summary class="manual-section-header">
+                <div class="manual-sec-icon" id="icon-myact"></div>
+                <div class="manual-sec-title">
+                  <h2>กิจกรรมของฉัน</h2>
+                  <p>ดูกิจกรรมที่ลงทะเบียนและสถานะการเข้าร่วม</p>
+                </div>
+                <span class="manual-sec-chevron" id="chev-myact"></span>
+              </summary>
+              <div class="manual-section-body" id="body-myact"></div>
+            </details>
+
+            <!-- Section 7: Evidence -->
+            <details class="manual-section" id="sec-evidence">
+              <summary class="manual-section-header">
+                <div class="manual-sec-icon" id="icon-evidence"></div>
+                <div class="manual-sec-title">
+                  <h2>ยื่นหลักฐานการเข้าร่วมกิจกรรม</h2>
+                  <p>อัปโหลดหลักฐานเพื่อยืนยันการเข้าร่วม</p>
+                </div>
+                <span class="manual-sec-chevron" id="chev-evidence"></span>
+              </summary>
+              <div class="manual-section-body" id="body-evidence"></div>
+            </details>
+
+            <!-- Section 8: Criteria -->
+            <details class="manual-section" id="sec-criteria">
+              <summary class="manual-section-header">
+                <div class="manual-sec-icon" id="icon-criteria"></div>
+                <div class="manual-sec-title">
+                  <h2>เกณฑ์กิจกรรม</h2>
+                  <p>ดูเกณฑ์ขั้นต่ำและความคืบหน้าของตนเอง</p>
+                </div>
+                <span class="manual-sec-chevron" id="chev-criteria"></span>
+              </summary>
+              <div class="manual-section-body" id="body-criteria"></div>
+            </details>
+
+            <!-- Section 9: Notifications -->
+            <details class="manual-section" id="sec-notif">
+              <summary class="manual-section-header">
+                <div class="manual-sec-icon" id="icon-notif"></div>
+                <div class="manual-sec-title">
+                  <h2>การแจ้งเตือน</h2>
+                  <p>รับทราบผลการตรวจหลักฐานและข่าวสาร</p>
+                </div>
+                <span class="manual-sec-chevron" id="chev-notif"></span>
+              </summary>
+              <div class="manual-section-body" id="body-notif"></div>
+            </details>
+
+            <!-- Section 10: Logout -->
+            <details class="manual-section" id="sec-logout">
+              <summary class="manual-section-header">
+                <div class="manual-sec-icon" id="icon-logout"></div>
+                <div class="manual-sec-title">
+                  <h2>ออกจากระบบ</h2>
+                  <p>ออกจากระบบอย่างปลอดภัย</p>
+                </div>
+                <span class="manual-sec-chevron" id="chev-logout"></span>
+              </summary>
+              <div class="manual-section-body" id="body-logout"></div>
+            </details>
+
+          </div><!-- /manual-content -->
+        </div><!-- /manual-layout -->
+      </main>
+    </div>
+  </div>
+
+  <!-- Back to Top -->
+  <button class="back-top" id="back-top" title="กลับขึ้นด้านบน"></button>
+
+  <script src="/shared/icons.js?v=20260614-1"></script>
+  <script src="/shared/app.js?v=20260614-1"></script>
+  <script>
+  // ===== Inject icons =====
+  function setIcon(id, name, color) {
+    const el = document.getElementById(id);
+    if (el) { el.innerHTML = icon(name, { size: 20 }); if (color) el.style.background = color; }
+  }
+  function setChev(id) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = icon('chevron-down', { size: 18 });
+  }
+
+  setIcon('icon-login', 'user'); setChev('chev-login');
+  setIcon('icon-dashboard', 'dashboard'); setChev('chev-dashboard');
+  setIcon('icon-activities', 'calendar'); setChev('chev-activities');
+  setIcon('icon-calendar', 'calendar-check'); setChev('chev-calendar');
+  setIcon('icon-register', 'check-square'); setChev('chev-register');
+  setIcon('icon-myact', 'check-circle'); setChev('chev-myact');
+  setIcon('icon-evidence', 'upload'); setChev('chev-evidence');
+  setIcon('icon-criteria', 'chart-bar'); setChev('chev-criteria');
+  setIcon('icon-notif', 'bell'); setChev('chev-notif');
+  setIcon('icon-logout', 'logout'); setChev('chev-logout');
+  document.getElementById('back-top').innerHTML = icon('chevron-up', { size: 20 });
+
+  // ===== Section 1: Login =====
+  document.getElementById('info-login').innerHTML =
+    icon('info', { size: 16 }) + '<span>ระบบรองรับเฉพาะอีเมลมหาวิทยาลัยทักษิณที่ลงท้ายด้วย <strong>@tsu.ac.th</strong> เท่านั้น</span>';
+
+  document.getElementById('steps-login').innerHTML = `
+    <li class="step-item"><div class="step-content"><strong>เปิดเบราว์เซอร์</strong> แล้วไปที่ URL ของระบบ<div class="step-note">แนะนำใช้ Google Chrome หรือ Microsoft Edge เวอร์ชันล่าสุด</div></div></li>
+    <li class="step-item"><div class="step-content"><strong>คลิกปุ่ม</strong> <span class="step-action">${icon('user', {size:13})} เข้าสู่ระบบด้วย Google</span> ที่หน้า Login</div></li>
+    <li class="step-item"><div class="step-content"><strong>เลือกหรือพิมพ์</strong> อีเมลมหาวิทยาลัยทักษิณของคุณ เช่น <code>6712345678@tsu.ac.th</code></div></li>
+    <li class="step-item"><div class="step-content"><strong>พิมพ์รหัสผ่าน</strong> Google Account และคลิก "ถัดไป"</div></li>
+    <li class="step-item"><div class="step-content"><strong>ยืนยันสิทธิ์</strong> ให้ระบบเข้าถึงข้อมูล Google Account (ครั้งแรกครั้งเดียว)</div></li>
+    <li class="step-item"><div class="step-content"><strong>ระบบพาเข้าสู่หน้าแดชบอร์ด</strong> โดยอัตโนมัติ ชื่อและรูปโปรไฟล์จะแสดงที่ด้านล่างซ้าย</div></li>`;
+
+  document.getElementById('warn-login').innerHTML =
+    icon('alert-triangle', { size: 16 }) + '<span>หากเข้าสู่ระบบไม่สำเร็จและเห็นข้อความ "อีเมลไม่ได้รับอนุญาต" แสดงว่าอีเมลที่ใช้ไม่ใช่ @tsu.ac.th กรุณาเปลี่ยนเป็นอีเมลมหาวิทยาลัย</span>';
+
+  // ===== Section 2: Dashboard =====
+  document.getElementById('body-dashboard').innerHTML = `
+    <p style="margin-bottom:12px;color:var(--text-muted);font-size:.88rem;">แดชบอร์ดแสดงภาพรวมกิจกรรมของคุณทั้งหมดในที่เดียว</p>
+    <table class="manual-table">
+      <thead><tr><th>ส่วนประกอบ</th><th>คำอธิบาย</th></tr></thead>
+      <tbody>
+        <tr><td><strong>ชั่วโมงสะสม</strong></td><td>ชั่วโมงกิจกรรมที่ได้รับการอนุมัติหลักฐานแล้วทั้งหมด</td></tr>
+        <tr><td><strong>กิจกรรมที่เข้าร่วม</strong></td><td>จำนวนกิจกรรมที่มีสถานะ "เข้าร่วมแล้ว"</td></tr>
+        <tr><td><strong>รอยืนยัน</strong></td><td>จำนวนหลักฐานที่ยื่นแล้วและรอเจ้าหน้าที่ตรวจสอบ</td></tr>
+        <tr><td><strong>ความคืบหน้าเกณฑ์</strong></td><td>แถบแสดงเปอร์เซ็นต์ชั่วโมงที่ทำได้เทียบกับเกณฑ์แต่ละประเภท</td></tr>
+        <tr><td><strong>กิจกรรมที่กำลังจะมา</strong></td><td>กิจกรรมที่เปิดรับสมัครและยังไม่ถึงวันจัด เรียงตามวันที่</td></tr>
+      </tbody>
+    </table>
+    <div class="tip-box">${icon('check-circle', {size:16})}<span>ติดตามความคืบหน้าเกณฑ์กิจกรรมที่แดชบอร์ดสม่ำเสมอเพื่อไม่ให้พลาดการเข้าร่วม</span></div>`;
+
+  // ===== Section 3: Activities =====
+  document.getElementById('body-activities').innerHTML = `
+    <p style="margin-bottom:12px;color:var(--text-muted);font-size:.88rem;">หน้านี้แสดงกิจกรรมทั้งหมดในระบบ สามารถค้นหาและกรองได้หลายแบบ</p>
+    <ol class="step-list">
+      <li class="step-item"><div class="step-content"><strong>เข้าเมนู</strong> <span class="step-action">${icon('calendar',{size:13})} กิจกรรมทั้งหมด</span> จาก Sidebar ด้านซ้าย</div></li>
+      <li class="step-item"><div class="step-content"><strong>ค้นหากิจกรรม</strong> โดยพิมพ์ชื่อในช่อง <span class="step-action">${icon('search',{size:13})} ค้นหา</span><div class="step-note">ระบบจะกรองผลลัพธ์ทันทีขณะพิมพ์</div></div></li>
+      <li class="step-item"><div class="step-content"><strong>กรองตามหมวดหมู่</strong> เลือก Dropdown "หมวดหมู่" เพื่อดูเฉพาะประเภทที่ต้องการ</div></li>
+      <li class="step-item"><div class="step-content"><strong>กรองตามสถานะ</strong> เลือก "เปิดรับสมัคร / ปิดรับสมัคร / ยกเลิก"</div></li>
+      <li class="step-item"><div class="step-content"><strong>กรองตามวันที่</strong> ระบุวันเริ่มต้น–สิ้นสุดในช่องวันที่เพื่อดูกิจกรรมในช่วงเวลานั้น</div></li>
+      <li class="step-item"><div class="step-content"><strong>คลิกชื่อกิจกรรม</strong> หรือ <span class="step-action">ดูรายละเอียด</span> เพื่อดูข้อมูลเพิ่มเติมและสมัคร</div></li>
+    </ol>
+    <table class="manual-table" style="margin-top:14px">
+      <thead><tr><th>Badge สถานะ</th><th>ความหมาย</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge badge-open">เปิดรับสมัคร</span></td><td>กำลังเปิดรับนิสิตเข้าร่วม สามารถสมัครได้</td></tr>
+        <tr><td><span class="badge badge-closed">ปิดรับสมัคร</span></td><td>ปิดรับสมัครแล้ว ไม่สามารถลงทะเบียนเพิ่มได้</td></tr>
+        <tr><td><span class="badge badge-pending">ยังไม่เปิดรับ</span></td><td>กิจกรรมยังไม่ถึงช่วงเปิดรับสมัคร</td></tr>
+        <tr><td><span class="badge badge-cancelled">ยกเลิก</span></td><td>กิจกรรมถูกยกเลิก</td></tr>
+      </tbody>
+    </table>`;
+
+  // ===== Section 4: Calendar =====
+  document.getElementById('body-calendar').innerHTML = `
+    <p style="margin-bottom:12px;color:var(--text-muted);font-size:.88rem;">ดูกิจกรรมทั้งหมดในรูปแบบปฏิทินรายเดือน เหมาะสำหรับวางแผนล่วงหน้า</p>
+    <ol class="step-list">
+      <li class="step-item"><div class="step-content"><strong>เข้าเมนู</strong> <span class="step-action">${icon('calendar-check',{size:13})} ปฏิทินกิจกรรม</span> จาก Sidebar</div></li>
+      <li class="step-item"><div class="step-content"><strong>ดูกิจกรรมในเดือนปัจจุบัน</strong> แต่ละวันในปฏิทินจะแสดง Chip กิจกรรมที่มีในวันนั้น โดยสีของ Chip แยกตามหมวดหมู่</div></li>
+      <li class="step-item"><div class="step-content"><strong>เปลี่ยนเดือน</strong> คลิก <span class="step-action">${icon('chevron-left',{size:13})}</span> หรือ <span class="step-action">${icon('chevron-right',{size:13})}</span> เพื่อย้ายเดือนก่อน/หลัง</div></li>
+      <li class="step-item"><div class="step-content"><strong>กลับมาเดือนปัจจุบัน</strong> คลิกปุ่ม <span class="step-action">วันนี้</span></div></li>
+      <li class="step-item"><div class="step-content"><strong>คลิก Chip กิจกรรม</strong> เพื่อเปิดหน้ารายละเอียดกิจกรรมนั้น</div></li>
+      <li class="step-item"><div class="step-content"><strong>"+N เพิ่มเติม"</strong> หากวันใดมีกิจกรรมมากกว่า 3 รายการ จะแสดงข้อความนี้</div></li>
+    </ol>
+    <div class="info-box">${icon('info',{size:16})}<span>กิจกรรมที่มีระยะเวลาหลายวัน (มี วันสิ้นสุด) จะแสดง Chip ในทุกวันตั้งแต่วันเริ่มต้นถึงวันสิ้นสุด</span></div>`;
+
+  // ===== Section 5: Register =====
+  document.getElementById('body-register').innerHTML = `
+    <p style="margin-bottom:12px;color:var(--text-muted);font-size:.88rem;">สมัครเข้าร่วมกิจกรรมที่สนใจผ่านหน้ารายละเอียดกิจกรรม</p>
+    <ol class="step-list">
+      <li class="step-item"><div class="step-content"><strong>ค้นหากิจกรรมที่สนใจ</strong> จากหน้ากิจกรรมทั้งหมด หรือปฏิทินกิจกรรม</div></li>
+      <li class="step-item"><div class="step-content"><strong>คลิกเข้าดูรายละเอียด</strong> ตรวจสอบข้อมูลกิจกรรม เช่น วันที่ เวลา สถานที่ จำนวนที่รับ และชั่วโมงเครดิต</div></li>
+      <li class="step-item"><div class="step-content"><strong>ตรวจสอบสถานะการรับสมัคร</strong> ต้องเป็น <span class="badge badge-open">เปิดรับสมัคร</span> และยังมีที่ว่าง</div></li>
+      <li class="step-item"><div class="step-content"><strong>คลิกปุ่ม</strong> <span class="step-action">${icon('check',{size:13})} สมัครเข้าร่วม</span> ที่ด้านล่างของหน้ารายละเอียด</div></li>
+      <li class="step-item"><div class="step-content"><strong>ยืนยันการสมัคร</strong> ในกล่อง Popup ที่ปรากฏขึ้น</div></li>
+      <li class="step-item"><div class="step-content"><strong>ระบบแจ้งผลสำเร็จ</strong> ปุ่มเปลี่ยนเป็น <span class="badge badge-registered">ลงทะเบียนแล้ว</span> และกิจกรรมจะปรากฏใน "กิจกรรมของฉัน"</div></li>
+    </ol>
+    <div class="warn-box">${icon('alert-triangle',{size:16})}<span>หากกิจกรรมเต็มแล้วหรือเลยกำหนดรับสมัคร ปุ่มสมัครจะไม่สามารถกดได้ กรุณาติดต่อเจ้าหน้าที่</span></div>
+    <div class="tip-box">${icon('check-circle',{size:16})}<span>สามารถ <strong>ยกเลิกการสมัคร</strong> ได้จากหน้า "กิจกรรมของฉัน" หากกิจกรรมยังอยู่ในสถานะเปิดรับสมัคร</span></div>`;
+
+  // ===== Section 6: My Activities =====
+  document.getElementById('body-myact').innerHTML = `
+    <p style="margin-bottom:12px;color:var(--text-muted);font-size:.88rem;">หน้านี้แสดงเฉพาะกิจกรรมที่คุณลงทะเบียนไว้ทั้งหมด</p>
+    <ol class="step-list">
+      <li class="step-item"><div class="step-content"><strong>เข้าเมนู</strong> <span class="step-action">${icon('check-square',{size:13})} กิจกรรมของฉัน</span> จาก Sidebar</div></li>
+      <li class="step-item"><div class="step-content"><strong>ดูรายการกิจกรรม</strong> ที่ลงทะเบียนไว้ พร้อมสถานะ Badge ปัจจุบัน</div></li>
+      <li class="step-item"><div class="step-content"><strong>ตรวจสอบสถานะ</strong> ของแต่ละกิจกรรมที่เข้าร่วม</div></li>
+      <li class="step-item"><div class="step-content"><strong>คลิก "ยื่นหลักฐาน"</strong> เพื่ออัปโหลดหลักฐานสำหรับกิจกรรมที่มีสถานะ "เข้าร่วมแล้ว"</div></li>
+      <li class="step-item"><div class="step-content"><strong>คลิก "ยกเลิก"</strong> เพื่อยกเลิกการลงทะเบียนสำหรับกิจกรรมที่ยังไม่ผ่านและยังเปิดรับอยู่</div></li>
+    </ol>
+    <table class="manual-table" style="margin-top:14px">
+      <thead><tr><th>สถานะ</th><th>ความหมาย</th><th>การดำเนินการที่ทำได้</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge badge-registered">ลงทะเบียนแล้ว</span></td><td>สมัครสำเร็จ รอวันจัดกิจกรรม</td><td>ยกเลิกการสมัคร</td></tr>
+        <tr><td><span class="badge badge-attended">เข้าร่วมแล้ว</span></td><td>เจ้าหน้าที่บันทึกว่าเข้าร่วม</td><td>ยื่นหลักฐาน</td></tr>
+        <tr><td><span class="badge badge-absent">ขาด</span></td><td>บันทึกว่าไม่ได้เข้าร่วม</td><td>-</td></tr>
+      </tbody>
+    </table>`;
+
+  // ===== Section 7: Evidence =====
+  document.getElementById('body-evidence').innerHTML = `
+    <p style="margin-bottom:12px;color:var(--text-muted);font-size:.88rem;">ยื่นหลักฐานเพื่อยืนยันการเข้าร่วมกิจกรรม เจ้าหน้าที่จะตรวจสอบและอนุมัติ</p>
+    <ol class="step-list">
+      <li class="step-item"><div class="step-content"><strong>เข้าสู่หน้า "กิจกรรมของฉัน"</strong> แล้วคลิก <span class="step-action">${icon('upload',{size:13})} ยื่นหลักฐาน</span> ที่กิจกรรมที่ต้องการ</div></li>
+      <li class="step-item"><div class="step-content"><strong>เลือกไฟล์หลักฐาน</strong> โดยคลิกกล่องอัปโหลด หรือลาก Drag &amp; Drop ไฟล์มาวาง<div class="step-note">รองรับ: รูปภาพ (JPG, PNG) และ PDF ขนาดไม่เกิน 10 MB</div></div></li>
+      <li class="step-item"><div class="step-content"><strong>พิมพ์คำอธิบาย</strong> ระบุรายละเอียดเพิ่มเติม เช่น "เข้าร่วมกิจกรรมอบรม วันที่ 15 มิถุนายน 2569"</div></li>
+      <li class="step-item"><div class="step-content"><strong>คลิก</strong> <span class="step-action">${icon('upload',{size:13})} ส่งหลักฐาน</span> เพื่อยืนยัน</div></li>
+      <li class="step-item"><div class="step-content"><strong>ระบบแจ้งผลสำเร็จ</strong> หลักฐานจะอยู่ในสถานะ <span class="badge badge-pending">รอตรวจสอบ</span></div></li>
+      <li class="step-item"><div class="step-content"><strong>รอผลการตรวจ</strong> คุณจะได้รับการแจ้งเตือนเมื่อเจ้าหน้าที่อนุมัติหรือปฏิเสธ</div></li>
+    </ol>
+    <table class="manual-table" style="margin-top:14px">
+      <thead><tr><th>สถานะหลักฐาน</th><th>ความหมาย</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge badge-pending">รอตรวจสอบ</span></td><td>ยื่นแล้ว รอเจ้าหน้าที่ดำเนินการ</td></tr>
+        <tr><td><span class="badge badge-approved">อนุมัติแล้ว</span></td><td>ได้รับชั่วโมงกิจกรรม ชั่วโมงจะถูกนับในระบบทันที</td></tr>
+        <tr><td><span class="badge badge-rejected">ปฏิเสธ</span></td><td>หลักฐานไม่ผ่าน อ่านหมายเหตุจากเจ้าหน้าที่และยื่นใหม่</td></tr>
+      </tbody>
+    </table>
+    <div class="warn-box">${icon('alert-triangle',{size:16})}<span>หลักฐานที่ถูก <strong>ปฏิเสธ</strong> สามารถยื่นใหม่ได้ โดยยื่นหลักฐานอีกครั้งสำหรับกิจกรรมเดิม</span></div>`;
+
+  // ===== Section 8: Criteria =====
+  document.getElementById('body-criteria').innerHTML = `
+    <p style="margin-bottom:12px;color:var(--text-muted);font-size:.88rem;">เกณฑ์กิจกรรมคือชั่วโมงขั้นต่ำที่นิสิตต้องผ่านในแต่ละประเภทกิจกรรม</p>
+    <ol class="step-list">
+      <li class="step-item"><div class="step-content"><strong>เข้าเมนู</strong> <span class="step-action">${icon('chart-bar',{size:13})} เกณฑ์กิจกรรม</span> จาก Sidebar</div></li>
+      <li class="step-item"><div class="step-content"><strong>ดูรายการเกณฑ์</strong> แต่ละประเภทกิจกรรมจะแสดงชั่วโมงขั้นต่ำที่กำหนด</div></li>
+      <li class="step-item"><div class="step-content"><strong>แถบความคืบหน้า</strong> แสดงชั่วโมงที่ทำได้จริงเทียบกับเกณฑ์ (เป็นเปอร์เซ็นต์)</div></li>
+      <li class="step-item"><div class="step-content"><strong>ตรวจสอบสถานะ</strong> สีเขียว = ผ่านเกณฑ์, สีส้ม = ยังไม่ผ่าน</div></li>
+    </ol>
+    <div class="tip-box">${icon('check-circle',{size:16})}<span>ชั่วโมงที่นับเข้าเกณฑ์จะนับเฉพาะหลักฐานที่ได้รับการ <strong>อนุมัติ</strong> แล้วเท่านั้น</span></div>`;
+
+  // ===== Section 9: Notifications =====
+  document.getElementById('body-notif').innerHTML = `
+    <p style="margin-bottom:12px;color:var(--text-muted);font-size:.88rem;">ระบบแจ้งเตือนอัตโนมัติเมื่อมีการเปลี่ยนแปลงสถานะหลักฐานของคุณ</p>
+    <ol class="step-list">
+      <li class="step-item"><div class="step-content"><strong>ดูจำนวนแจ้งเตือนใหม่</strong> จากปุ่ม <span class="step-action">${icon('bell',{size:13})}</span> ที่แถบด้านบน (มีตัวเลขสีแดงแสดงจำนวน)</div></li>
+      <li class="step-item"><div class="step-content"><strong>คลิกปุ่ม Bell</strong> เพื่อดูรายการแจ้งเตือนล่าสุดใน Popup</div></li>
+      <li class="step-item"><div class="step-content"><strong>คลิกแจ้งเตือน</strong> เพื่อเปิดรายละเอียดและทำเครื่องหมายว่าอ่านแล้ว</div></li>
+      <li class="step-item"><div class="step-content"><strong>ดูแจ้งเตือนทั้งหมด</strong> คลิก "ดูทั้งหมด" ใน Popup เพื่อไปหน้าการแจ้งเตือน</div></li>
+    </ol>
+    <table class="manual-table" style="margin-top:14px">
+      <thead><tr><th>ประเภทแจ้งเตือน</th><th>เมื่อไหร่</th></tr></thead>
+      <tbody>
+        <tr><td>หลักฐานอนุมัติ</td><td>เมื่อเจ้าหน้าที่อนุมัติหลักฐานที่คุณยื่น</td></tr>
+        <tr><td>หลักฐานปฏิเสธ</td><td>เมื่อเจ้าหน้าที่ปฏิเสธหลักฐาน พร้อมระบุเหตุผล</td></tr>
+      </tbody>
+    </table>`;
+
+  // ===== Section 10: Logout =====
+  document.getElementById('body-logout').innerHTML = `
+    <ol class="step-list">
+      <li class="step-item"><div class="step-content"><strong>มองที่ด้านล่างซ้ายของ Sidebar</strong> จะเห็นชื่อและรูปโปรไฟล์ของคุณ</div></li>
+      <li class="step-item"><div class="step-content"><strong>คลิกปุ่ม</strong> <span class="step-action">${icon('logout',{size:13})} ออก</span> สีแดงด้านขวาของชื่อ</div></li>
+      <li class="step-item"><div class="step-content"><strong>ระบบออกจากระบบ</strong> และพาไปหน้า Login โดยอัตโนมัติ</div></li>
+    </ol>
+    <div class="tip-box">${icon('check-circle',{size:16})}<span>แนะนำให้ออกจากระบบทุกครั้งหลังใช้งานบนคอมพิวเตอร์สาธารณะ เพื่อความปลอดภัย</span></div>`;
+
+  // ===== TOC Active on Scroll =====
+  (function setupTOC() {
+    const sections = document.querySelectorAll('.manual-section');
+    const tocItems = document.querySelectorAll('.toc-item');
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = '#' + entry.target.id;
+          tocItems.forEach(a => { a.classList.toggle('active', a.getAttribute('href') === id); });
+        }
+      });
+    }, { rootMargin: '-20% 0px -60% 0px', threshold: 0 });
+    sections.forEach(s => observer.observe(s));
+
+    // Smooth scroll on TOC click
+    tocItems.forEach(a => {
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        const target = document.querySelector(a.getAttribute('href'));
+        if (target) {
+          target.open = true;
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+  })();
+
+  // ===== Back to Top =====
+  const backTop = document.getElementById('back-top');
+  window.addEventListener('scroll', () => {
+    backTop.classList.toggle('visible', window.scrollY > 300);
+  });
+  backTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+  // ===== Init Layout =====
+  (async () => {
+    await initLayout({ activePage: '/manual' });
+  })();
+  </script>
+</body>
+</html>

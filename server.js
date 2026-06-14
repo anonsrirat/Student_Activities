@@ -50,7 +50,7 @@ app.get('/', (req, res) => {
 });
 
 // Student pages (require auth)
-const studentPages = ['dashboard', 'activities', 'activity-detail', 'my-activities', 'submit-evidence', 'criteria', 'notifications', 'calendar'];
+const studentPages = ['dashboard', 'activities', 'activity-detail', 'my-activities', 'submit-evidence', 'criteria', 'notifications', 'calendar', 'manual'];
 studentPages.forEach(page => {
   app.get(`/${page}`, (req, res) => {
     const user = getUser(req);
@@ -60,7 +60,7 @@ studentPages.forEach(page => {
 });
 
 // Staff pages (require auth + staff role)
-const staffPages = ['dashboard', 'activities', 'evidence', 'reports', 'criteria', 'users'];
+const staffPages = ['dashboard', 'activities', 'evidence', 'reports', 'criteria', 'users', 'manual'];
 staffPages.forEach(page => {
   app.get(`/staff/${page}`, (req, res) => {
     const user = getUser(req);
